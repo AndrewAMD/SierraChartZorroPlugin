@@ -53,7 +53,7 @@ To set up Sierra Chart's DTC Server:
 Here are the "ideal default settings", for simply accessing the platform on your own computer:
 ![Ideal default settings](https://raw.githubusercontent.com/AndrewAMD/gist/master/images/screenshots/0001.JPG)
 
-If you need multiple instances of Sierra Chart to trade with two brokers at the same time, you will need a second installation of Sierra Chart on your computer.  Do do this:
+If you need multiple instances of Sierra Chart to trade with two brokers at the same time, you will need a second installation of Sierra Chart on your computer.  To do this:
 * Follow [these instructions](https://www.sierrachart.com/index.php?page=doc/NewInstance.php).
 * Also, make sure that the DTC Ports are unique for every Sierra Chart installation on the same host.
 
