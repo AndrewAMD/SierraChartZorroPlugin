@@ -59,6 +59,8 @@ If you need multiple instances of Sierra Chart to trade with two brokers at the 
 
 ## Configuring Zorro
 
+### User field
+
 The user field gets parsed for multiple arguments.  Each argument is separated by a space character.  The format is:
 * "field1:value1 field2:value2"
 
@@ -74,6 +76,12 @@ Fields:
 * "zlib" - If this flag is provided, zlib will be enabled for transfer of historical data.  By default, disabled.  This setting reduces bandwidth between Zorro and the DTC server, but it increases the processing load.
 
 To set all the fields to their default value, leave the user field completely blank.  This configuration is compatible with the default DTC server settings shown above.
+
+### Password field
+
+This field is only required if the DTC Server has "Require Authentication" checked.
+
+Simply input the password to your Sierra Chart account.
 
 ## Plugin Capabilities
 
