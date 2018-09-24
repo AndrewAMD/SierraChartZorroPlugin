@@ -15,7 +15,7 @@
     <ProjectGuid>{2823C430-62C9-4338-95D3-65956B182DB7}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>SierraChart</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -57,13 +57,13 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions> WIN32;_DEBUG;SierraChart_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>.\dtc;C:\dep\boost_1_67_0;C:\dep\openssl-1.0.2o_32bit\stage\include;C:\dep\zlib-1.2.11;C:\dep\zlib-1.2.11\stage2\;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\dtc;..\..\boost_1_68_0;..\..\openssl-1.0.2p_32bit\stage\include;..\..\zlib-1.2.11;..\..\zlib-1.2.11\stage\;</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\dep\boost_1_67_0\stage\lib;C:\dep\openssl-1.0.2o_32bit\stage\lib;C:\dep\zlib-1.2.11\stage2\Debug;</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\boost_1_68_0\stage\lib;..\..\openssl-1.0.2p_32bit\stage\lib;..\..\zlib-1.2.11\stage\Debug;</AdditionalLibraryDirectories>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies);libeay32.lib;ssleay32.lib;zlibstaticd.lib;</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
@@ -78,7 +78,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;SierraChart_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>.\dtc;C:\dep\boost_1_67_0;C:\dep\openssl-1.0.2o_32bit\stage\include;C:\dep\zlib-1.2.11;C:\dep\zlib-1.2.11\stage2\;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\dtc;..\..\boost_1_68_0;..\..\openssl-1.0.2p_32bit\stage\include;..\..\zlib-1.2.11;..\..\zlib-1.2.11\stage\;</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -86,7 +86,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\dep\boost_1_67_0\stage\lib;C:\dep\openssl-1.0.2o_32bit\stage\lib;C:\dep\zlib-1.2.11\stage2\Release;</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\boost_1_68_0\stage\lib;..\..\openssl-1.0.2p_32bit\stage\lib;..\..\zlib-1.2.11\stage\Release;</AdditionalLibraryDirectories>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies);libeay32.lib;ssleay32.lib;zlibstatic.lib</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>

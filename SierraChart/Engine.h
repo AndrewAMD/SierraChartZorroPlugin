@@ -6,14 +6,15 @@
 #undef _WIN32_WINNT
 #define _WIN32_WINNT 0x0600 // Windows Vista or newer
 
+
 #include "use_future_helpers.hpp"
 #include "boost/asio/ssl.hpp"
-#include <Windows.h>
 #include <atomic>
 #include <deque>
 #include "DTCProtocol.h"
 #include "DTCTools.h"
 #include "Inflator.h"
+#include <Windows.h>
 #include "zorro_include/trading.h"
 
 
