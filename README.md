@@ -109,6 +109,7 @@ The following standard Zorro Broker API functions have been implemented:
   * GET\_POSITION
   * GET\_COMPLIANCE
   * SET\_PATCH
+  * GET\_BOOK
 
 
 In addition, BrokerCommand supports some newly-defined functions:
