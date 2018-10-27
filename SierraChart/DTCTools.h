@@ -94,6 +94,7 @@ s_Header()
 		//uint32_t get_symbolID(std::string Symbol);
 		//uint32_t get_symbolID(std::string Symbol, std::string Exchange);
 		uint32_t get_symbolID(DTC::s_SecurityDefinitionResponse* def);
+		std::string get_existing_symbol(uint32_t SymbolID);
 	private:
 		std::vector<s_SymbolIDEntry> v_symbolIDEntries_;
 	};

@@ -479,6 +479,19 @@ namespace DTCTools
 		v_symbolIDEntries_.push_back(new_entry);
 		return new_entry.SymbolID;
 	}
+	std::string SymbolIDList::get_existing_symbol(uint32_t SymbolID)
+	{
+		for (auto& entry : v_symbolIDEntries_)
+		{
+			if (entry.SymbolID == SymbolID)
+			{
+				return entry.Symbol;
+			}
+		}
+		// no matches return blank
+		return "";
+	}
+
 
 	void resize_msg_string(std::string& msg)
 	{

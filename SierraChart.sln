@@ -28,8 +28,8 @@ Global
 		{2823C430-62C9-4338-95D3-65956B182DB7}.Debug|x86.Build.0 = Debug|Win32
 		{2823C430-62C9-4338-95D3-65956B182DB7}.Release|x86.ActiveCfg = Release|Win32
 		{2823C430-62C9-4338-95D3-65956B182DB7}.Release|x86.Build.0 = Release|Win32
-		{CD5E4CF4-08EA-4799-8025-3076AF2CC8E5}.Debug|x86.ActiveCfg = Release
-		{CD5E4CF4-08EA-4799-8025-3076AF2CC8E5}.Release|x86.ActiveCfg = Release
+		{CD5E4CF4-08EA-4799-8025-3076AF2CC8E5}.Debug|x86.ActiveCfg = Release|x86
+		{CD5E4CF4-08EA-4799-8025-3076AF2CC8E5}.Release|x86.ActiveCfg = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -154,16 +154,52 @@ public:
 
 };
 
+
+// GET_BOOK
+// Fill the T2 array with current quotes from the order book.
+// The asset is set with SET_SYMBOL; bid prices are negative, 
+// the time field is optional.The last T2 element is set to 0 
+// for indicating the end of the array.Returns the number of quotes.
+
+//typedef struct T2
+//{
+//	DATE  time; // timestamp in OLE date/time format
+//	float fVal; // price quote, positive for ask and negative for bid
+//	float fVol; // volume / size
+//} T2; // order book data
+
+struct DepthEntry {
+	double Quantity;
+	DTC::t_DateTimeWithMilliseconds DateTime;
+};
+
+class SymbolKnowledge
+{
+public:
+	DTC::s_MarketDataSnapshot snap;
+	std::map<unsigned int, DepthEntry> map_pricelevel_askqty; // (pricelevel = round(price/min.increment)) ask
+	std::map<unsigned int, DepthEntry> map_pricelevel_bidqty; // (pricelevel = round(price/min.increment)) bid
+	DTC::MarketDataFeedStatusEnum symbol_status;
+	float MinPriceIncrement; // ref. s_SecurityDefinitionResponse. Initial value is zero, set if zero.
+
+	SymbolKnowledge();
+	~SymbolKnowledge();
+};
+
 class Market
 {
 public:
-	bool can_get(DTC::s_MarketDataSnapshot& snapshot, uint32_t SymbolID);
-
+	Market();
+	~Market();
 	void Snapshot(DTC::s_MarketDataSnapshot* snapshot);
 	DTC::s_MarketDataSnapshot* get_snapshot(uint32_t SymbolID);
+	SymbolKnowledge* get_symbol_knowledge(uint32_t SymbolID);
+	DTC::MarketDataFeedStatusEnum feed_status;
 private:
-	std::deque<DTC::s_MarketDataSnapshot> snapshots_;
+	std::deque<SymbolKnowledge> market_knowledge;
+	
 };
+
 
 class UnsatisfiedClosure
 {
@@ -172,6 +208,9 @@ public:
 	std::string DTCSymbol;  // not ZorroAsset because we already have the security definition
 	int ZorroAmount; // not DTC qty (double) because int is preferred for checking matches
 };
+
+
+
 
 class per_trade_account
 {
@@ -210,6 +249,7 @@ public:
 	int zt_BrokerBuy2(char* ZorroAsset, int Amount, double StopDist, double Limit, double *pPrice, int *pFill);
 	int zt_BrokerTrade(int nTradeID, double *pOpen, double *pClose, double *pRoll, double *pProfit);
 	double zt_get_position(char* ZorroAsset);
+	double zt_get_book(T2* pCurrentQuotes);
 	std::atomic<bool> stopped;
 	void stop();
 	
@@ -288,12 +328,33 @@ public:
 	DTC::s_SecurityDefinitionResponse* can_define(char* ZorroAsset);
 private:
 	bool can_subscribe(DTC::s_SecurityDefinitionResponse* def);
+	bool can_subscribe_market_depth(DTC::s_SecurityDefinitionResponse* def);
 	bool can_update(DTC::s_SecurityDefinitionResponse* def, double *pPrice, double *pSpread, double *pVolume, double *pPip, double *pPipCost, double *pLotAmount, double *pMarginCost, double *pRollLong, double *pRollShort);
 
 
 	// Server response tracking
 	DTC::s_LogonResponse server_settings;
 	Market market;
+	void md_update(
+		uint32_t SymbolID,
+		const DTC::AtBidOrAskEnum& Side,
+		const double& Price,
+		const double& Quantity,
+		const DTC::t_DateTimeWithMilliseconds& DateTime,
+		const DTC::MarketDepthUpdateTypeEnum& UpdateType);
+	void md_update(
+		uint32_t SymbolID,
+		const DTC::AtBidOrAskEnum& Side,
+		const float& Price,
+		const float& Quantity,
+		const DTC::t_DateTime4Byte& DateTime,
+		const DTC::MarketDepthUpdateTypeEnum& UpdateType);
+	void md_update(
+		uint32_t SymbolID,
+		const DTC::AtBidOrAskEnum& Side,
+		const double& Price,
+		const double& Quantity,
+		const DTC::t_DateTimeWithMilliseconds& DateTime);
 
 	// moved to per_trade_account
 	//DTC::s_AccountBalanceUpdate balance;

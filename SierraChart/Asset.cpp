@@ -2,6 +2,7 @@
 using namespace DTC;
 using namespace DTCTools;
 using namespace DTCTypes;
+namespace cro = std::chrono;
 
 double client::zt_get_position(char* ZorroAsset)
 {
@@ -32,6 +33,78 @@ double client::zt_get_position(char* ZorroAsset)
 		// Amount / AmountDivisor = Quantity, therefore
 		// Amount = Quantity * AmountDivisor
 		return (hofr->GetQuantity() * AmountDivisor);
+	});
+}
+
+double client::zt_get_book(T2* book)
+{
+	// Parameter: T2[MAX_QUOTES]
+	// Fill the T2 array with current quotes from the order book. 
+	// The asset is set with SET_SYMBOL; bid prices are negative, 
+	// the time field is optional. The last T2 element is set to 0 
+	// for indicating the end of the array. 
+	// Returns the number of quotes.
+
+	// Is market depth supported right now?
+	if (!server_settings.GetMarketDepthIsSupported()) return 0;
+	auto def = can_define((char*)symbol.c_str());
+	if (!def) return 0;
+	auto id = sid.get_symbolID(def);
+	if (!id) return 0;
+	auto pK = market.get_symbol_knowledge(id);
+	if (!pK) return 0;
+	
+	// check if market depth data is filled.  if not, wait up to five seconds... else quit.
+	bool is_ready = false;
+	for (int i = 0; i < 20; i++) {
+		is_ready = maybe_post_return([&]()->bool {
+			if (pK->map_pricelevel_askqty.size() && pK->map_pricelevel_bidqty.size())
+				return true;
+			else 
+				return false;
+		});
+		if (is_ready) break;
+		if (!BrokerProgress(1)) return 0;
+		std::this_thread::sleep_for(cro::milliseconds(250));
+	}
+	
+	return maybe_post_return([&]()->double {
+		const auto max = (int)(MAX_QUOTES / 2);
+		int i = 0;
+
+		// ask
+		{
+			auto askiter = pK->map_pricelevel_askqty.begin();  // start with lowest, work upwards
+			for (int j = 0;
+				(j < max) && (askiter != pK->map_pricelevel_askqty.end());
+				j++, i++, askiter++)
+			{
+				if (!askiter->second.DateTime)
+					book[i].time = 0;
+				else
+					book[i].time = convertTime(askiter->second.DateTime);
+				book[i].fVal = (float)((double)askiter->first * pK->MinPriceIncrement); //positive
+				book[i].fVol = (float)(askiter->second.Quantity);
+			}
+		}
+
+		// bid
+		{
+			auto biditer = pK->map_pricelevel_bidqty.rbegin(); // start with highest, work downwards
+			for (int j = 0;
+				(j < max) && (biditer != pK->map_pricelevel_bidqty.rend());
+				j++, i++, biditer++)
+			{
+				if (!biditer->second.DateTime)
+					book[i].time = 0;
+				else
+					book[i].time = convertTime(biditer->second.DateTime);
+				book[i].fVal = (float)((-1.0) * (double)biditer->first * pK->MinPriceIncrement); //negative
+				book[i].fVol = (float)(biditer->second.Quantity);
+			}
+		}
+
+		return (double)i;
 	});
 }
 
@@ -218,7 +291,6 @@ s_SecurityDefinitionResponse* client::can_define_server(std::string& Symbol)
 	rq.RequestID = rid.get_request_id(rq);
 	rq.SetSymbol(Symbol.c_str());
 	b.expect(sol_SecurityDefinitionResponse_RequestID, rq.RequestID);
-	//err("Requesting definition...");
 	write_async(rq);
 	if (!b.block_is_good())
 		return NULL;
@@ -250,18 +322,34 @@ s_SecurityDefinitionResponse* client::can_define(char* ZorroAsset)
 	else return can_define_server(Symbol);
 }
 
+
+
 bool client::can_subscribe(s_SecurityDefinitionResponse* def)
 {
 	s_MarketDataRequest rq;
 	rq.SymbolID = sid.get_symbolID(def);
 	rq.SetSymbol(def->GetSymbol());
 	rq.SetExchange(def->GetExchange());
+	rq.RequestAction = SUBSCRIBE; 
 	b.expect(sol_MarketDataSnapshot_SymbolID, rq.SymbolID);
 	write_async(rq);
-	if(!b.block_is_good())
-	return 0;
-	else return 1;
+	if(!b.block_is_good()) return false;
+	else return true;
+}
 
+bool client::can_subscribe_market_depth(DTC::s_SecurityDefinitionResponse* def)
+{
+	if (!server_settings.GetMarketDepthIsSupported()) return false;
+	if (!def->GetHasMarketDepthData()) return false;
+	s_MarketDepthRequest rq;
+	rq.SymbolID = sid.get_symbolID(def);
+	rq.SetSymbol(def->GetSymbol());
+	rq.SetExchange(def->GetExchange());
+	rq.RequestAction = SUBSCRIBE;
+	b.expect(sol_MarketDepthSnapshot_SymbolID, rq.SymbolID);
+	write_async(rq);
+	if (!b.block_is_good()) return false;
+	else return true;
 }
 
 bool client::can_update(s_SecurityDefinitionResponse* d,

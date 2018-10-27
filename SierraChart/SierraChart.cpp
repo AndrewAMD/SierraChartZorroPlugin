@@ -181,9 +181,6 @@ DLLFUNC double BrokerCommand(int Command, DWORD dwParameter)
 		return 1;
 	case GET_POSITION:
 		return c->zt_get_position((char*)dwParameter);
-	//case SET_LIMIT:
-	//	limit = (double)dwParameter;
-	//	return 1;
 	case GET_COMPLIANCE:
 	{
 		int output = 0;
@@ -193,9 +190,9 @@ DLLFUNC double BrokerCommand(int Command, DWORD dwParameter)
 		output += 8; // no closing of trades
 		return output;
 	}
-	//case GET_BOOK:
-	//	// TODO: support GET_OPTIONS
-	//	return 0;
+	case GET_BOOK:
+		return c->zt_get_book((T2*)dwParameter);
+
 	//case GET_OPTIONS:
 	//	// TODO: support GET_OPTIONS
 	//	return 0;

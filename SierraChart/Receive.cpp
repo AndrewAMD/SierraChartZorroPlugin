@@ -351,9 +351,17 @@ void client::receive(const std::vector<char>& m_in)
 
 void client::receive(s_LogonResponse* m) {
 	server_settings = *m;
-	if(m->GetHistoricalPriceDataSupported())
+	if (m->GetHistoricalPriceDataSupported())
 		err("#" + (std::string)server_settings.GetResultText()); // Historical socket is too verbose!
 	else err(server_settings.GetResultText());
+
+	if (conf.id == uint8_t(1)) {
+		if (!m->GetTradingIsSupported()) err("WARNING: Trading not supported");
+		if (!m->GetMarketDataSupported()) err("WARNING: Market data not supported");
+		if (!m->GetSecurityDefinitionsSupported()) err("WARNING: Security definitions not supported");
+		if (!m->GetMarketDepthIsSupported()) err("NOTE: Market depth not supported");
+		if (m->GetMarketDepthUpdatesBestBidAndAsk()) err("DEVNOTE: Market depth updates best bid and ask");
+	}
 	if (b.solicit == sol_LogonResponse) {
 		if (server_settings.GetResult() != LOGON_SUCCESS) b.unblock(false);
 		else b.unblock(true);
@@ -374,27 +382,21 @@ void client::receive(s_EncodingResponse* m) {}
 
 // Market data
 void client::receive(s_MarketDataReject* m) {
-	//err("MARKET DATA REJECT");
 	err(m->GetRejectText());
-	if ((b.solicit == sol_MarketDataSnapshot_SymbolID) && (m->GetSymbolID() == b.solicit_ID))
-	{
-		b.unblock(false);
-	}
+	
+	b.unblock(false); // No need to filter this due to one-second pause upon subscription
+
 	market_trigger();
 }
 void client::receive(s_MarketDataSnapshot* m) {
-	//err(("MARKET DATA SNAPSHOT:" + std::to_string((int)m->GetSymbolID())).c_str());
-	//bool is_first_snapshot = true;
-	//if (market.get_snapshot(m->GetSymbolID())) is_first_snapshot = false;
-
 	market.Snapshot(m);
 	if (
 		(b.solicit == sol_MarketDataSnapshot_SymbolID) &&
-		(m->GetSymbolID() == b.solicit_ID) //&& 
-										 //!is_first_snapshot
+		(m->GetSymbolID() == b.solicit_ID) 
 		)
-		std::this_thread::sleep_for(cro::milliseconds(500));
-	b.unblock(true);
+	{
+		b.unblock(true);
+	}
 	market_trigger();
 }
 void client::receive(s_MarketDataSnapshot_Int* m) { market_trigger(); }
@@ -515,18 +517,93 @@ void client::receive(s_MarketDepthReject* m) {
 	market_trigger();
 }
 void client::receive(s_MarketDepthSnapshotLevel* m) {
-	if ((b.solicit == sol_MarketDepthSnapshot_SymbolID) && (m->GetSymbolID() == b.solicit_ID))
+	md_update(m->GetSymbolID(), m->GetSide(), m->GetPrice(), m->GetQuantity(),m->GetDateTime());
+	// unblock after last snapshot msg received
+	if ((b.solicit == sol_MarketDepthSnapshot_SymbolID) &&
+		(m->GetSymbolID() == b.solicit_ID) &&
+		(m->GetIsLastMessageInBatch())
+		)
+	{
 		b.unblock(true);
+	}
 }
 void client::receive(s_MarketDepthSnapshotLevel_Int* m) { market_trigger(); }
-void client::receive(s_MarketDepthUpdateLevel* m) { market_trigger(); }
-void client::receive(s_MarketDepthUpdateLevelCompact* m) { market_trigger(); }
+void client::receive(s_MarketDepthUpdateLevel* m) { 
+	md_update(m->GetSymbolID(), m->GetSide(), m->GetPrice(), m->GetQuantity(), m->GetDateTime(),m->GetUpdateType());
+	market_trigger(); 
+}
+void client::receive(s_MarketDepthUpdateLevelCompact* m) { 
+	md_update(m->GetSymbolID(), m->GetSide(), m->GetPrice(), m->GetQuantity(), m->GetUpdateType(), m->GetUpdateType());
+	market_trigger(); 
+}
 void client::receive(s_MarketDepthUpdateLevel_Int* m) { market_trigger(); }
-void client::receive(s_MarketDepthFullUpdate10* m) { market_trigger(); }
-void client::receive(s_MarketDepthFullUpdate20* m) { market_trigger(); }
+void client::receive(s_MarketDepthFullUpdate10* m) { 
+	auto pK = market.get_symbol_knowledge(m->GetSymbolID());
+	if (!pK) return;
+	pK->map_pricelevel_askqty.clear();
+	pK->map_pricelevel_bidqty.clear();
 
-void client::receive(s_MarketDataFeedStatus* m) { market_trigger(); }
-void client::receive(s_MarketDataFeedSymbolStatus* m) { market_trigger(); }
+	for (int i = 0; i < (m->NUM_DEPTH_LEVELS); i++) {
+		md_update(m->GetSymbolID(), AT_ASK, m->AskDepth[i].Price, m->AskDepth[i].Quantity,0); //no date
+		md_update(m->GetSymbolID(), AT_BID, m->BidDepth[i].Price, m->BidDepth[i].Quantity,0); //no date
+	}
+	market_trigger(); 
+}
+void client::receive(s_MarketDepthFullUpdate20* m) { 
+	auto pK = market.get_symbol_knowledge(m->GetSymbolID());
+	if (!pK) return;
+	pK->map_pricelevel_askqty.clear();
+	pK->map_pricelevel_bidqty.clear();
+
+	for (int i = 0; i < (m->NUM_DEPTH_LEVELS); i++) {
+		md_update(m->GetSymbolID(), AT_ASK, m->AskDepth[i].Price, m->AskDepth[i].Quantity,0); // no date
+		md_update(m->GetSymbolID(), AT_BID, m->BidDepth[i].Price, m->BidDepth[i].Quantity,0); // no date
+	}
+	market_trigger();
+}
+
+void client::receive(s_MarketDataFeedStatus* m) { 
+	market.feed_status = m->GetStatus();
+	std::string str = "";
+	switch (market.feed_status){
+	case MARKET_DATA_FEED_STATUS_UNSET:
+	default:
+		str = "unset"; 
+		break;
+	case MARKET_DATA_FEED_UNAVAILABLE:
+		str = "unavailable"; 
+		break;	
+	case MARKET_DATA_FEED_AVAILABLE:
+		str = "available"; 
+		break;
+	}
+	err("Datafeed Status: " + str);
+	market_trigger(); 
+}
+void client::receive(s_MarketDataFeedSymbolStatus* m) { 
+	auto pK = market.get_symbol_knowledge(m->GetSymbolID());
+	if (!pK) return;
+
+	auto sym = sid.get_existing_symbol(m->GetSymbolID());
+	
+	pK->symbol_status = m->GetStatus();
+	std::string str = "";
+	switch (pK->symbol_status) {
+	case MARKET_DATA_FEED_STATUS_UNSET:
+	default:
+		str = "unset"; 
+		break;
+	case MARKET_DATA_FEED_UNAVAILABLE:
+		str = "unavailable"; 
+		break;
+	case MARKET_DATA_FEED_AVAILABLE:
+		str = "available"; 
+		break;
+	}
+	err("Symbol " + sym + " feed Status: " + str);
+
+	market_trigger(); 
+}
 
 // Trading related
 void client::receive(s_OpenOrdersReject* m) {
@@ -740,17 +817,25 @@ void client::receive(s_SecurityDefinitionResponse* m) {
 	// security_definitions is where all known assets are indexed
 
 	// check if Symbol exists and update
-	std::string sym = m->GetSymbol(); bool found = false;
+	std::string 
+		sym = m->GetSymbol(), 
+		description = m->GetDescription();
+	bool found = false;
 	//err((
-	//	"RECEIVED DEF: " + sym + 
-	//	", TYPE: " + std::to_string((int)m->GetSecurityType()) + 
-	//	", CVPI: " + std::to_string((int)m->GetCurrencyValuePerIncrement()) + 
-	//	", INCR: " + std::to_string((int)m->GetMinPriceIncrement())
+	//	"RECEIVED DEF: \"" + sym +
+	//	//"\", TYPE: " + std::to_string((int)m->GetSecurityType()) +
+	//	//", CVPI: " + std::to_string((float)m->GetCurrencyValuePerIncrement()) +
+	//	//", INCR: " + std::to_string((float)m->GetMinPriceIncrement()) +
+	//	", EXP: " + std::to_string(m->GetSecurityExpirationDate())
 	//	).c_str()); // delete this
+	//err("Description: " + (std::string)m->GetDescription());
 	if (
 		sym.size() && // filter out definitions without a symbol
-		m->GetCurrencyValuePerIncrement() && // filter out definitions missing this value
-		m->GetMinPriceIncrement()
+		description.size()
+		//m->GetCurrencyValuePerIncrement() && //not always available
+		//m->GetMinPriceIncrement()// filter out definitions missing this value
+		// Filter by description, per SC staff recommendation: 
+		// https://www.sierrachart.com/SupportBoard.php?ThreadID=37923
 		)
 	{
 		for (auto& def : security_definitions)
@@ -781,17 +866,19 @@ void client::receive(s_SecurityDefinitionResponse* m) {
 		(m->GetRequestID() == b.solicit_ID) &&
 		m->GetIsFinalMessage()
 		)
-		b.unblock(true);
+	{
+		if(((std::string)m->GetDescription()).size())b.unblock(true);
+		else b.unblock(false);
+	}
 }
 void client::receive(s_SecurityDefinitionReject* m) {
+	err("SECURITY DEFINITION REJECT");
 	err(m->GetRejectText());
 	if (
 		(b.solicit == sol_SecurityDefinitionResponse_RequestID) &&
 		(m->GetRequestID() == b.solicit_ID)
 		)
 	{
-		//err("SECURITY DEFINITION REJECT");
-		err(m->GetRejectText());
 		b.unblock(false);
 	}
 }

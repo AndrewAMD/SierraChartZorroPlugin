@@ -62,7 +62,7 @@ int client::zt_BrokerLogin(char* Accounts)
 	if (!can_sync_positions()) { err("Sync positions failure."); return 0; }
 
 	// These are just some tests to check if SC has implemented futures and options listing.
-	// As of Aug 2018, they have **not** been implemented by SC.
+	// As of Oct 2018, they have **not** been implemented by SC.
 	//print_exchanges();
 	//print_symbols_for_underlying("F.US.EDA");
 	//print_symbols_for_underlying("F.US.EDAZ18");
@@ -320,13 +320,18 @@ int client::zt_BrokerAsset(char* ZorroAsset, double *pPrice, double *pSpread, do
 	// subscribe if needed
 	if (!pPrice)
 	{
+		err("Subscribing to Symbol " + (std::string)def->Symbol + "...");
 		if (!can_subscribe(def))
 		{
-			err("Subscription to Symbol " + (std::string)def->Symbol + " failed.");
+			err((std::string)def->Symbol + ": subscription failed.");
 			return 0;
 		}
 		else // good
+		{
+			if (can_subscribe_market_depth(def)) err("Market depth subscribed");
+			else err("No market depth");
 			return 1;
+		}
 	}
 
 	// otherwise output asset status
