@@ -830,12 +830,13 @@ void client::receive(s_SecurityDefinitionResponse* m) {
 	//	).c_str()); // delete this
 	//err("Description: " + (std::string)m->GetDescription());
 	if (
-		sym.size() && // filter out definitions without a symbol
-		description.size()
+		sym.size() //&& // filter out definitions without a symbol
+		//description.size()
 		//m->GetCurrencyValuePerIncrement() && //not always available
 		//m->GetMinPriceIncrement()// filter out definitions missing this value
 		// Filter by description, per SC staff recommendation: 
 		// https://www.sierrachart.com/SupportBoard.php?ThreadID=37923
+		// in retrospect, this is ABSULUTELY UNRELIABLE.  MSFT gets a blank description.
 		)
 	{
 		for (auto& def : security_definitions)
@@ -867,7 +868,7 @@ void client::receive(s_SecurityDefinitionResponse* m) {
 		m->GetIsFinalMessage()
 		)
 	{
-		if(((std::string)m->GetDescription()).size())b.unblock(true);
+		if(sym.size())b.unblock(true);
 		else b.unblock(false);
 	}
 }
@@ -944,8 +945,17 @@ void client::receive(s_HistoricalPriceDataReject* m) {
 	b.unblock(false);
 }
 void client::receive(s_HistoricalPriceDataRecordResponse* m) {
+	// do we need to allocate memory?
+	if (
+		!h_bars.size() || // no memory allocated
+		((h_bars.size()) && (h_bars.back().size() == h_bars.back().capacity())) // back vector is full
+		)
+	{
+		h_bars.push_back(std::vector< s_HistoricalPriceDataRecordResponse>());
+		h_bars.back().reserve(16384);
+	}
 	
-	h_bars.push_back(*m);
+	h_bars.back().push_back(*m);
 	if (
 		m->GetIsFinalRecord() &&
 		(b.solicit == sol_HistoricalPriceData_RequestID) &&
@@ -954,14 +964,17 @@ void client::receive(s_HistoricalPriceDataRecordResponse* m) {
 		b.unblock(true);
 }
 void client::receive(s_HistoricalPriceDataTickRecordResponse* m) {
-	// check if this is new request
-	if (h_ticks.size())
+	// do we need to allocate memory?
+	if (
+		!h_ticks.size() || // no memory allocated
+		((h_ticks.size()) && (h_ticks.back().size() == h_ticks.back().capacity())) // back vector is full
+		)
 	{
-		const s_HistoricalPriceDataTickRecordResponse& last = h_ticks.back();
-		if (last.GetRequestID() != m->GetRequestID())
-			h_ticks.clear();
+		h_ticks.push_back(std::vector<s_HistoricalPriceDataTickRecordResponse>());
+		h_ticks.back().reserve(16384);
 	}
-	h_ticks.push_back(*m);
+	
+	h_ticks.back().push_back(*m);
 	if (
 		m->GetIsFinalRecord() &&
 		(b.solicit == sol_HistoricalPriceData_RequestID) &&

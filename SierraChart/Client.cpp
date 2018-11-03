@@ -13,7 +13,8 @@ using namespace DTCTools;
 client::client(socket_config config) :
 	b(
 		[&](const std::string& error_msg) {err(error_msg); },
-		[&]() {zt_print_errors(); }
+		[&]() {zt_print_errors(); },
+		conf
 	),
 	conf(config),
 	io(),
@@ -218,40 +219,90 @@ int client::can_get_history(DTC::s_SecurityDefinitionResponse* def, DATE tStart,
 		if (hdr.GetNoRecordsToReturn()) { stop();  return 0; }
 		else if (
 			!hdr.GetRecordInterval() &&  // header indicates ticks
-			(!server_settings.GetUseIntegerPriceOrderMessages())  // prices are in double
+			(!server_settings.GetUseIntegerPriceOrderMessages()) && // prices are in double
+			h_ticks.size() // The server indeed supplied ticks (NOT ALWAYS THE CASE!!!!)
 			)
 		{
 			float value;
-			auto re_it = h_ticks.rbegin();
+			auto dq_reit = h_ticks.rbegin();
 			int i = 0; // T6 index
+			for (; (dq_reit != h_ticks.rend()) && (i < HISTORY_MAXIMUM_TICKS); dq_reit++){
+				auto vec_reit = dq_reit->rbegin();
+				for (; (vec_reit != dq_reit->rend()) && (i < HISTORY_MAXIMUM_TICKS); vec_reit++) {
+					// Here we skip invalid entries up front
+					DATE t = convertTime(vec_reit->GetDateTime());
+					if (t<tStart ||
+						t>tEnd)
+						continue;
 
-			for (; (re_it != h_ticks.rend()) && (i < HISTORY_MAXIMUM_TICKS); re_it++)
-			{
-				// Here we skip invalid entries up front
-				DATE t = convertTime(re_it->GetDateTime());
-				if (t<tStart ||
-					t>tEnd)
-					continue;
-				
-				// we are cleared to make an entry
-				value = (float)re_it->GetPrice();
-				if (re_it->GetAtBidOrAsk() == AT_BID) value *= -1;
-				pt6[i].time = t;
-				pt6[i].fHigh = value;
-				pt6[i].fLow = value;
-				pt6[i].fOpen = value;
-				pt6[i].fClose = value;
-				pt6[i].fVal = 0; // not used
-				if (voltype == VOLTYPE_SESSION_VOLUME)
-					pt6[i].fVol = (float)re_it->GetVolume(); // real volume this tick (to be converted to session volume)
-				else if (voltype == VOLTYPE_SESSION_NUMTRADES)
-					pt6[i].fVol = (float)1; // tick volume this tick (to be converted to session tick frequency)
-				else
-					pt6[i].fVol = 0;
+					// we are cleared to make an entry
+					value = (float)vec_reit->GetPrice();
+					if (vec_reit->GetAtBidOrAsk() == AT_BID) value *= -1;
+					pt6[i].time = t;
+					pt6[i].fHigh = value;
+					pt6[i].fLow = value;
+					pt6[i].fOpen = value;
+					pt6[i].fClose = value;
+					pt6[i].fVal = 0; // not used
+					if (voltype == VOLTYPE_SESSION_VOLUME)
+						pt6[i].fVol = (float)vec_reit->GetVolume(); // real volume this tick (to be converted to session volume)
+					else if (voltype == VOLTYPE_SESSION_NUMTRADES)
+						pt6[i].fVol = (float)1; // tick volume this tick (to be converted to session tick frequency)
+					else
+						pt6[i].fVol = 0;
 
 
-				// We only increment the T6 index if we are satisfied with our entry.
-				i++;
+					// We only increment the T6 index if we are satisfied with our entry.
+					i++;
+				}
+			}
+			const int t6_qty = i;
+			emulate_session_volume(pt6, t6_qty);
+			return t6_qty;
+		}
+		else if (
+			!hdr.GetRecordInterval() &&  // header indicates ticks
+			(!server_settings.GetUseIntegerPriceOrderMessages()) && // prices are in double
+			h_bars.size() // The server actually gave us bars instead!!!
+			)
+		{
+			float value;
+			auto dq_reit = h_bars.rbegin();
+			int i = 0; // T6 index
+			for (; (dq_reit != h_bars.rend()) && (i < HISTORY_MAXIMUM_TICKS); dq_reit++) {
+				auto vec_reit = dq_reit->rbegin();
+				for (; (vec_reit != dq_reit->rend()) && (i < HISTORY_MAXIMUM_TICKS); vec_reit++) {
+					// Here we skip invalid entries up front
+					DATE t = convertTime(vec_reit->GetStartDateTime());
+
+
+					if (t<tStart ||
+						t>tEnd)
+						continue;
+
+					// we are cleared to make an entry
+					value = (float)vec_reit->GetLastPrice();
+					if (!value) value = (float)vec_reit->GetOpenPrice();
+					if (!value) continue; // nothing to do!!!
+					// sanity check: is one volume being used and not the other?
+					if(!vec_reit->GetAskVolume() && vec_reit->GetBidVolume()) // AT_BID
+						value *= -1;
+					pt6[i].time = t;
+					pt6[i].fHigh = value;
+					pt6[i].fLow = value;
+					pt6[i].fOpen = value;
+					pt6[i].fClose = value;
+					pt6[i].fVal = 0; // not used
+					if (voltype == VOLTYPE_SESSION_VOLUME)
+						pt6[i].fVol = (float)vec_reit->GetVolume(); // real volume this tick (to be converted to session volume)
+					else if (voltype == VOLTYPE_SESSION_NUMTRADES)
+						pt6[i].fVol = (float)1; // tick volume this tick (to be converted to session tick frequency)
+					else
+						pt6[i].fVol = 0;
+
+					// We only increment the T6 index if we are satisfied with our entry.
+					i++;
+				}
 			}
 			const int t6_qty = i;
 			emulate_session_volume(pt6, t6_qty);
@@ -262,38 +313,40 @@ int client::can_get_history(DTC::s_SecurityDefinitionResponse* def, DATE tStart,
 			(!server_settings.GetUseIntegerPriceOrderMessages()) // prices are in double
 			)
 		{
-			auto re_it = h_bars.rbegin();
+			auto dq_reit = h_bars.rbegin();
 			int i = 0; // T6 index
-			for (; (re_it != h_bars.rend()) && (i < HISTORY_MAXIMUM_TICKS); re_it++)
-			{
-				// Here we skip invalid entries up front
-				// zorro: bar close, sierra: bar open
-				int64_t dt = re_it->GetStartDateTime(); // dt is the moment the first tick is received in a bar. Unit: seconds
-				dt /= seconds_bar; // now it's rounded down (minutes for 1M).  So we are at the beginning of the bar.
-				dt *= seconds_bar; // back to seconds, beginning of the bar.
-				dt += seconds_bar; // end of bar, per Zorro
-				DATE t = convertTime(dt);  
-				
+			for (; (dq_reit != h_bars.rend()) && (i < HISTORY_MAXIMUM_TICKS); dq_reit++) {
+				auto vec_reit = dq_reit->rbegin();
+				for (; (vec_reit != dq_reit->rend()) && (i < HISTORY_MAXIMUM_TICKS); vec_reit++) {
+					// Here we skip invalid entries up front
+					// zorro: bar close, sierra: bar open
+					int64_t dt = vec_reit->GetStartDateTime(); // dt is the moment the first tick is received in a bar. Unit: seconds
+					dt /= seconds_bar; // now it's rounded down (minutes for 1M).  So we are at the beginning of the bar.
+					dt *= seconds_bar; // back to seconds, beginning of the bar.
+					dt += seconds_bar; // end of bar, per Zorro
+					DATE t = convertTime(dt);
 
-				if (t<tStart ||
-					t>tEnd)
-					continue;
 
-				pt6[i].time = t;
-				pt6[i].fOpen = (float)re_it->GetOpenPrice();
-				pt6[i].fHigh = (float)re_it->GetHighPrice();
-				pt6[i].fLow = (float)re_it->GetLowPrice();
-				pt6[i].fClose = (float)re_it->GetLastPrice();
-				pt6[i].fVal = 0; //not used
-				if (voltype == VOLTYPE_SESSION_VOLUME)
-					pt6[i].fVol = (float)re_it->GetVolume(); // real volume this bar (to be converted to session volume)
-				else if (voltype == VOLTYPE_SESSION_NUMTRADES)
-					pt6[i].fVol = (float)re_it->GetNumTrades(); // tick volume this bar (to be converted to session tick frequency)
-				else
-					pt6[i].fVol = 0;
+					if (t<tStart ||
+						t>tEnd)
+						continue;
 
-				// We only increment the T6 index if we are satisfied with our entry.
-				i++;
+					pt6[i].time = t;
+					pt6[i].fOpen = (float)vec_reit->GetOpenPrice();
+					pt6[i].fHigh = (float)vec_reit->GetHighPrice();
+					pt6[i].fLow = (float)vec_reit->GetLowPrice();
+					pt6[i].fClose = (float)vec_reit->GetLastPrice();
+					pt6[i].fVal = 0; //not used
+					if (voltype == VOLTYPE_SESSION_VOLUME)
+						pt6[i].fVol = (float)vec_reit->GetVolume(); // real volume this bar (to be converted to session volume)
+					else if (voltype == VOLTYPE_SESSION_NUMTRADES)
+						pt6[i].fVol = (float)vec_reit->GetNumTrades(); // tick volume this bar (to be converted to session tick frequency)
+					else
+						pt6[i].fVol = 0;
+
+					// We only increment the T6 index if we are satisfied with our entry.
+					i++;
+				}
 			}
 			const int t6_qty = i;
 			//save_to_file(pt6, t6_qty);
@@ -648,7 +701,7 @@ bool client::can_sync_positions()
 void client::timeout_adjust()
 {
 	if (stopped) return;
-	timeout.expires_at(cro::steady_clock::now() + cro::milliseconds(10000));
+	timeout.expires_at(cro::steady_clock::now() + cro::milliseconds(conf.timeout_ms));
 }
 
 

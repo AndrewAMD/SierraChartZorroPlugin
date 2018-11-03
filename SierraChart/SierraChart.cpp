@@ -113,7 +113,7 @@ DLLFUNC int BrokerHistory2(char* ZorroAsset, DATE tStart, DATE tEnd, int nTickMi
 	conf.port = p2;
 	conf.ssl = DEFAULT_TLS_ENABLED;
 	conf.zlib = zlib_enabled;
-	conf.timeout_ms = 10000;
+	conf.timeout_ms = 300000; // Five minutes. Need to be generous for large downloads.  There are no hearbeats!!
 	conf.tradeaccount = tradeaccount_main;
 	conf.logon_request.HeartbeatIntervalInSeconds = HEARTBEAT2_S;
 	conf.logon_request.SetUsername(user.c_str());
@@ -123,6 +123,20 @@ DLLFUNC int BrokerHistory2(char* ZorroAsset, DATE tStart, DATE tEnd, int nTickMi
 	h.zt_print_errors();
 	return ret;
 }
+
+//// TODO: TESTING PURPOSES ONLY... DELETE THIS
+//DLLFUNC int BrokerHistory2(char* ZorroAsset, DATE tStart, DATE tEnd, int nTickMinutes, int nTicks, T6* ticks)
+//{
+//	for (;;) {
+//		if (!BrokerProgress(1))
+//		{
+//			BrokerError("ZORRO BAILED");
+//			return 0;
+//		}
+//		std::this_thread::sleep_for(cro::milliseconds(100));
+//	}
+//}
+
 
 DLLFUNC double BrokerCommand(int Command, DWORD dwParameter)
 {

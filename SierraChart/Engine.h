@@ -22,7 +22,7 @@
 #define PLUGIN_VERSION 2
 
 // buffer sizing
-#define HISTORY_MAXIMUM_TICKS 20000	// Assuming 1 year of 1M ticks, round up to 400k.
+#define HISTORY_MAXIMUM_TICKS 200000	// Based on experimentation with T1 data
 #define READ_BUFFER_SIZE 4096
 
 // timing settings
@@ -119,10 +119,27 @@ enum enum_Solicit
 	sol_SocketConnect = 99, // special case - attempting to open a TCP connection (and handshake, if applicable)
 };
 
+class socket_config
+{
+public:
+	uint8_t id = 0;
+	std::string host = "";
+	std::string port = "";
+	std::string tradeaccount = "";
+	bool ssl = true;
+	bool zlib = false;
+	unsigned int timeout_ms = 10000;
+	unsigned int hb_interval_s = 5;
+	DTC::s_LogonRequest logon_request;
+};
+
 class zt_blocker
 {
 public:
-	zt_blocker(std::function<void(const std::string&)> fp_err, std::function<void(void)> fp_zt_print_errors);
+	zt_blocker(
+		std::function<void(const std::string&)> fp_err, 
+		std::function<void(void)> fp_zt_print_errors,
+		socket_config config);
 	~zt_blocker();
 	bool block_is_good();
 	void unblock(bool good);
@@ -145,6 +162,7 @@ private:
 	boost::asio::io_context ztio;
 	boost::asio::steady_timer timeout;
 	boost::asio::steady_timer next_brokerprogress;
+	socket_config conf;
 
 public:
 	// receiving variables 
@@ -223,19 +241,7 @@ public:
 };
 
 
-class socket_config
-{
-public:
-	uint8_t id = 0;
-	std::string host = "";
-	std::string port = "";
-	std::string tradeaccount = "";
-	bool ssl = true;
-	bool zlib = false;
-	unsigned int timeout_ms = 10000;
-	unsigned int hb_interval_s = 5;
-	DTC::s_LogonRequest logon_request;
-};
+
 
 class client
 {
@@ -371,8 +377,8 @@ private:
 	bool next_is_new;
 
 	DTC::s_HistoricalPriceDataResponseHeader h_header;
-	std::deque<DTC::s_HistoricalPriceDataRecordResponse> h_bars;
-	std::deque<DTC::s_HistoricalPriceDataTickRecordResponse> h_ticks;
+	std::deque<std::vector<DTC::s_HistoricalPriceDataRecordResponse>> h_bars;
+	std::deque<std::vector<DTC::s_HistoricalPriceDataTickRecordResponse>> h_ticks;
 
 
 	// receive and handle all messages from server

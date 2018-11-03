@@ -6,7 +6,8 @@ using error_code = boost::system::error_code;
 
 zt_blocker::zt_blocker(
 	std::function<void(const std::string&)> fp_err, 
-	std::function<void(void)> fp_zt_print_errors)
+	std::function<void(void)> fp_zt_print_errors,
+	socket_config config)
 	:
 	err(fp_err),
 	zt_print_errors(fp_zt_print_errors),
@@ -72,7 +73,7 @@ void zt_blocker::brokerprogress_handler(const boost::system::error_code& ec)
 void zt_blocker::timeout_do()
 {
 	if (stopped) return;
-	timeout.expires_at(cro::steady_clock::now() + cro::seconds(10));
+	timeout.expires_at(cro::steady_clock::now() + cro::milliseconds(conf.timeout_ms));
 	timeout.async_wait([&](const boost::system::error_code& ec) {
 		timeout_handler(ec); });
 }
