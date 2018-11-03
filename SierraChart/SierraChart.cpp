@@ -124,19 +124,6 @@ DLLFUNC int BrokerHistory2(char* ZorroAsset, DATE tStart, DATE tEnd, int nTickMi
 	return ret;
 }
 
-//// TODO: TESTING PURPOSES ONLY... DELETE THIS
-//DLLFUNC int BrokerHistory2(char* ZorroAsset, DATE tStart, DATE tEnd, int nTickMinutes, int nTicks, T6* ticks)
-//{
-//	for (;;) {
-//		if (!BrokerProgress(1))
-//		{
-//			BrokerError("ZORRO BAILED");
-//			return 0;
-//		}
-//		std::this_thread::sleep_for(cro::milliseconds(100));
-//	}
-//}
-
 
 DLLFUNC double BrokerCommand(int Command, DWORD dwParameter)
 {
