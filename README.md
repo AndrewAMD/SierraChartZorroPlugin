@@ -169,7 +169,7 @@ This project has an MIT-style license. See the LICENSE.md file for more details.
   * [Broker API](http://zorro-project.com/manual/en/brokerplugin.htm)
   * [BrokerCommand](http://zorro-project.com/manual/en/brokercommand.htm)
 * [Sierra Chart](http://www.sierrachart.com)
-* [DTC Protocol](http://www.dtcprotocol.com)
+* [DTC Protocol](http://www.dtcprotocol.org)
 * [Boost](https://www.boost.org)
   * [Boost Asio](https://www.boost.org/doc/libs/1_68_0/doc/html/boost_asio.html)
   * [Boost UUID](https://www.boost.org/doc/libs/1_68_0/libs/uuid/doc/index.html)
