@@ -180,5 +180,7 @@ This project has an MIT-style license. See the LICENSE.md file for more details.
 
 For any questions and inquiries, I can be reached via email:
 
-* Andrew M. Dolder
+* Andrew M. Dolder, P.E.
+* Engineer
+* VitalTrades LLC
 * andrew@vitaltrades.com
