@@ -171,8 +171,8 @@ void client::assets_test_print()
 	//print_security_info("F.US.M6BM18");
 	//print_security_info("C.US.EP11J1815550");
 	//print_security_info("P.US.EP11J1815550");
-	print_symbols_for_underlying("F.US.JY6Z18");
-	print_symbols_for_underlying("F.US.EDAZ18");
+	print_symbols_for_underlying("F.US.JY6H19", SECURITY_TYPE_FUTURES_OPTION);
+	print_symbols_for_underlying("F.US.EDAH19", SECURITY_TYPE_FUTURES_OPTION);
 
 }
 void client::print_underlying_symbols_for_exchange(std::string Exchange)
@@ -197,11 +197,12 @@ void client::print_underlying_symbols_for_exchange(std::string Exchange)
 		err(("Underlying: " + (std::string)re.UnderlyingSymbol).c_str());
 	}
 }
-void client::print_symbols_for_underlying(std::string Underlying)
+void client::print_symbols_for_underlying(std::string Underlying, DTC::SecurityTypeEnum SecurityType)
 {
 	s_SymbolsForUnderlyingRequest rq;
 	rq.RequestID = rid.get_request_id(rq);
 	rq.SetUnderlyingSymbol(Underlying.c_str());
+	rq.SecurityType = SecurityType;
 	b.expect(sol_SecurityDefinitionResponse_RequestID, rq.RequestID);
 	err(("Requesting symbols for underlying: " + Underlying).c_str());
 	write_async(rq);

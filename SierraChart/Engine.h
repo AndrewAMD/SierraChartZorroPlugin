@@ -318,7 +318,7 @@ private:
 	void print_exchanges();
 	void print_security_info(std::string Symbol);
 	void print_underlying_symbols_for_exchange(std::string Exchange);
-	void print_symbols_for_underlying(std::string Underlying);
+	void print_symbols_for_underlying(std::string Underlying, DTC::SecurityTypeEnum SecurityType);
 	void assets_test_print();
 	bool can_parse_future(std::string ZorroAsset, std::string& Underlying, int& Expiry_YYYYMMDD);
 	bool can_parse_option(std::string ZorroAsset, std::string& Underlying, int& Expiry_YYYYMMDD, double& StrikePrice, char& P_or_C);

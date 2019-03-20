@@ -57,14 +57,14 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions> WIN32;_DEBUG;SierraChart_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>.\dtc;..\..\boost_1_68_0;..\..\openssl-1.0.2p_32bit\stage\include;..\..\zlib-1.2.11;..\..\zlib-1.2.11\stage\;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\dtc;C:\Users\normal\source\repos\boost_1_69_0;C:\Users\normal\source\repos\zlib;C:\Users\normal\source\repos\zlib\stage;C:\Users\normal\source\repos\openssl-1.0.2r_32\stage\include;</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\..\boost_1_68_0\stage\lib;..\..\openssl-1.0.2p_32bit\stage\lib;..\..\zlib-1.2.11\stage\Debug;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies);libeay32.lib;ssleay32.lib;zlibstaticd.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Users\normal\source\repos\openssl-1.0.2r_32\stage\lib;C:\Users\normal\source\repos\boost_1_69_0\stage\lib;C:\Users\normal\source\repos\zlib\stage\Debug;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies);libeay32.lib;ssleay32.lib;zlibstaticd.lib</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
   </ItemDefinitionGroup>
@@ -78,7 +78,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;SierraChart_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>.\dtc;..\..\boost_1_68_0;..\..\openssl-1.0.2p_32bit\stage\include;..\..\zlib-1.2.11;..\..\zlib-1.2.11\stage\;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\dtc;C:\Users\normal\source\repos\boost_1_69_0;C:\Users\normal\source\repos\zlib;C:\Users\normal\source\repos\zlib\stage;C:\Users\normal\source\repos\openssl-1.0.2r_32\stage\include;</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -86,7 +86,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\..\boost_1_68_0\stage\lib;..\..\openssl-1.0.2p_32bit\stage\lib;..\..\zlib-1.2.11\stage\Release;</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\normal\source\repos\openssl-1.0.2r_32\stage\lib;C:\Users\normal\source\repos\boost_1_69_0\stage\lib;C:\Users\normal\source\repos\zlib\stage\Release;</AdditionalLibraryDirectories>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies);libeay32.lib;ssleay32.lib;zlibstatic.lib</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>

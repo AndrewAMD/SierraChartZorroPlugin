@@ -63,12 +63,18 @@ int client::zt_BrokerLogin(char* Accounts)
 	if (!can_sync_positions()) { err("Sync positions failure."); return 0; }
 
 	// These are just some tests to check if SC has implemented futures and options listing.
-	// As of Oct 2018, they have **not** been implemented by SC.
+	// As of Jan 2019, futures implemented but not options.
 	//print_exchanges();
-	//print_symbols_for_underlying("F.US.EDA");
-	//print_symbols_for_underlying("F.US.EDAZ18");
-	//print_symbols_for_underlying("F.US.JY6Z");
-	//print_symbols_for_underlying("F.US.JY6Z18");
+	//print_symbols_for_underlying("F.US.EP", SECURITY_TYPE_FUTURES);
+	//print_symbols_for_underlying("F.US.EDA", SECURITY_TYPE_FUTURES);
+	//print_symbols_for_underlying("F.US.JY6", SECURITY_TYPE_FUTURES);
+	//print_symbols_for_underlying("ES", SECURITY_TYPE_FUTURES);
+	//print_symbols_for_underlying("DY", SECURITY_TYPE_FUTURES);
+	//print_symbols_for_underlying("B6", SECURITY_TYPE_FUTURES);
+	//print_symbols_for_underlying("J7", SECURITY_TYPE_FUTURES);
+
+
+
 
 	return 1;
 }
@@ -613,6 +619,7 @@ bool client::can_sync_orders_hist()
 {
 	s_HistoricalOrderFillsRequest rq;
 	rq.RequestID = rid.get_request_id(rq);
+	rq.NumberOfDays = 365; // Server: "NumberOfDays or StartDateTime fields must be non-zero."
 	b.expect(sol_HistoricalOrderFillResponse_RequestID, rq.RequestID);
 	write_async(rq);
 	if (!b.block_is_good())
