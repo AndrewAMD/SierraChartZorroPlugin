@@ -58,7 +58,7 @@ int client::zt_BrokerLogin(char* Accounts)
 
 	if (!can_confirm_trade_account(Accounts)) { err("Confirm tradeaccount failure."); return 0; }
 	if (!can_sync_account_balance()) { err("Sync balance failure."); return 0; }
-	if (!can_sync_orders_hist()) { err("Sync hist orders failure."); return 0; }
+	if (!can_sync_orders_hist()) {err("Sync hist orders failure."); return 0; }
 	if (!can_sync_orders_open()) { err("Sync open orders failure."); return 0; }
 	if (!can_sync_positions()) { err("Sync positions failure."); return 0; }
 
@@ -184,11 +184,12 @@ int client::can_get_history(DTC::s_SecurityDefinitionResponse* def, DATE tStart,
 		max_days = 62;
 		seconds_bar = 60; // zorro: 1M bar CLOSE, sierra: bar OPEN
 		break;
-	//case 1440:
-	//	rq.RecordInterval = INTERVAL_1_DAY;
-	//	max_days = 365;
-	//	// zorro: daily bar OPEN, sierra: bar OPEN
-	//	break;
+	case 1440:
+		rq.RecordInterval = INTERVAL_1_DAY;
+		max_days = 7000;
+		seconds_bar = 1440 * 60;
+		// zorro: daily bar OPEN, sierra: bar OPEN
+		break;
 	default:
 		err("Error: Only tick and 1M historical data supported!");
 		stop();
@@ -620,6 +621,7 @@ bool client::can_sync_orders_hist()
 	s_HistoricalOrderFillsRequest rq;
 	rq.RequestID = rid.get_request_id(rq);
 	rq.NumberOfDays = 365; // Server: "NumberOfDays or StartDateTime fields must be non-zero."
+	rq.SetTradeAccount(conf.tradeaccount.c_str());
 	b.expect(sol_HistoricalOrderFillResponse_RequestID, rq.RequestID);
 	write_async(rq);
 	if (!b.block_is_good())
@@ -648,6 +650,7 @@ bool client::can_sync_orders_open()
 {
 	s_OpenOrdersRequest rq;
 	rq.RequestAllOrders = 1;
+	rq.SetTradeAccount(tradeaccount_main.c_str());
 	rq.RequestID = rid.get_request_id(rq);
 	b.expect(sol_OrderUpdate_RequestID, rq.RequestID);
 	write_async(rq);
