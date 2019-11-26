@@ -8,7 +8,7 @@ EndProject
 Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "Zorro", "..\..\..\..\Zorro\Zorro.exe", "{CD5E4CF4-08EA-4799-8025-3076AF2CC8E5}"
 	ProjectSection(DebuggerProjectSystem) = preProject
 		PortSupplier = 00000000-0000-0000-0000-000000000000
-		Executable = C:\ZorroBeta\Zorro.exe
+		Executable = C:\ZorroDonSystem\Zorro.exe
 		RemoteMachine = NEOV
 		StartingDirectory = C:\ZorroBeta
 		Environment = Default

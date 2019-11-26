@@ -18,9 +18,10 @@ using namespace DTCTools;
 
 DLLFUNC int BrokerOpen(char* Name, FARPROC fpError, FARPROC fpProgress)
 {
+	
 	strcpy_s(Name, 32, "SierraChart");
-	(FARPROC&)BrokerError = fpError;
-	(FARPROC&)BrokerProgress = fpProgress;
+	if(fpError)(FARPROC&)BrokerError = fpError;
+	if(fpProgress)(FARPROC&)BrokerProgress = fpProgress;
 	return PLUGIN_VERSION;
 }
 

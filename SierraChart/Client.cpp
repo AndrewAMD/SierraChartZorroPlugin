@@ -172,6 +172,7 @@ int client::can_get_history(DTC::s_SecurityDefinitionResponse* def, DATE tStart,
 	s_HistoricalPriceDataRequest rq;
 	int seconds_bar = 0;
 	int max_days = 0;
+	bool do_time_shift = false;
 	switch (nTickMinutes)
 	{
 	case 0:
@@ -183,6 +184,7 @@ int client::can_get_history(DTC::s_SecurityDefinitionResponse* def, DATE tStart,
 		rq.RecordInterval = INTERVAL_1_MINUTE;
 		max_days = 62;
 		seconds_bar = 60; // zorro: 1M bar CLOSE, sierra: bar OPEN
+		do_time_shift = true;
 		break;
 	case 1440:
 		rq.RecordInterval = INTERVAL_1_DAY;
@@ -330,7 +332,9 @@ int client::can_get_history(DTC::s_SecurityDefinitionResponse* def, DATE tStart,
 					int64_t dt = vec_reit->GetStartDateTime(); // dt is the moment the first tick is received in a bar. Unit: seconds
 					dt /= seconds_bar; // now it's rounded down (minutes for 1M).  So we are at the beginning of the bar.
 					dt *= seconds_bar; // back to seconds, beginning of the bar.
-					dt += seconds_bar; // end of bar, per Zorro
+					if (do_time_shift) {
+						dt += seconds_bar; // end of bar, per Zorro
+					}
 					DATE t = convertTime(dt);
 
 
