@@ -163,6 +163,11 @@ void emulate_session_volume(T6* pt6, const int& nEntries)
 //	ofs.close();
 //}
 
+
+
+#define IGNORE_MAX_DAYS //HACK
+
+
 int client::can_get_history(DTC::s_SecurityDefinitionResponse* def, DATE tStart, DATE tEnd, 
 	int nTickMinutes, int nTicks, T6* pt6)
 {
@@ -171,6 +176,7 @@ int client::can_get_history(DTC::s_SecurityDefinitionResponse* def, DATE tStart,
 	// we are logged in to historical server.
 	s_HistoricalPriceDataRequest rq;
 	int seconds_bar = 0;
+
 	int max_days = 0;
 	bool do_time_shift = false;
 	switch (nTickMinutes)
@@ -199,7 +205,9 @@ int client::can_get_history(DTC::s_SecurityDefinitionResponse* def, DATE tStart,
 	}
 	rq.StartDateTime = convertDate_1sec64bit(tStart);
 	rq.EndDateTime = convertDate_1sec64bit(tEnd);
+#ifndef IGNORE_MAX_DAYS
 	rq.StartDateTime = std::max(rq.StartDateTime, rq.EndDateTime - (max_days * 24 * 60 * 60));
+#endif
 	rq.SetSymbol(def->GetSymbol());
 	rq.SetExchange(def->GetExchange());
 	
