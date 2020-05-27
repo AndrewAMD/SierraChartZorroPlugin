@@ -45,6 +45,7 @@
 // new BROKERCOMMANDS
 #define SET_DIVIDEND_ADJ 140 // Input 1 to enable dividend adjusted history, 0 for no dividend adjustment
 #define GET_DTCSECURITYDEF 69 
+#pragma pack(push, 1)
 typedef struct DTCSECURITYDEF
 {
 	char Symbol[64];
@@ -74,6 +75,7 @@ typedef struct DTCSECURITYDEF
 	float MaintenanceMarginRequirement;
 	char Currency[8];
 } DTCSECURITYDEF;
+#pragma pack(pop)
 
 // BROKERCOMMAND setting definitions
 #define PRICETYPE_ASKBID			1
