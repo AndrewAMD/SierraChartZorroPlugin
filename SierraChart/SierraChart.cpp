@@ -143,6 +143,7 @@ DLLFUNC double BrokerCommand(int Command, DWORD dwParameter)
 	case SET_VOLTYPE:
 		switch ((int)dwParameter)
 		{
+		case VOLTYPE_TRADE_VOLUME:
 		case VOLTYPE_SESSION_VOLUME:
 		case VOLTYPE_SESSION_NUMTRADES:
 		case VOLTYPE_SESSION_NO_VOLUME:
