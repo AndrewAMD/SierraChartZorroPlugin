@@ -45,6 +45,7 @@
 // new BROKERCOMMANDS
 #define SET_DIVIDEND_ADJ 140 // Input 1 to enable dividend adjusted history, 0 for no dividend adjustment
 #define GET_DTCSECURITYDEF 69 
+
 #pragma pack(push, 1)
 typedef struct DTCSECURITYDEF
 {
@@ -81,6 +82,7 @@ typedef struct DTCSECURITYDEF
 #define PRICETYPE_ASKBID			1
 #define PRICETYPE_TRADES			2
 #define VOLTYPE_SESSION_NO_VOLUME	1
+#define VOLTYPE_TRADE_VOLUME		4	// Real trading volume for bar.
 #define VOLTYPE_SESSION_VOLUME		-4	// Real trading volume for "this session". "This session" is emulated for historical. Starts from zero and counts up. Resets occasionally.
 #define VOLTYPE_SESSION_NUMTRADES	-2	// Number of trades made for "this session".  Like above, but more useful for decentralized no-volume securities.
 #define ORDERTYPE_FILLORKILL		0
