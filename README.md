@@ -1,4 +1,4 @@
-# Sierra Chart Plugin for Zorro, version 0.9.3.2
+# Sierra Chart Plugin for Zorro, version 0.9.3.3
 
 This plugin works both as a broker plugin to the Zorro Trading Automaton and as a client to Sierra Chart in order to:
 1) Get live market data
