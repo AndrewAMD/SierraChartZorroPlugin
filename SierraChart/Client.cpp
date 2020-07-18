@@ -261,11 +261,11 @@ int client::can_get_history(DTC::s_SecurityDefinitionResponse* def, DATE tStart,
 					pt6[i].fOpen = value;
 					pt6[i].fClose = value;
 					pt6[i].fVal = 0; // not used
-					if (voltype == VOLTYPE_SESSION_VOLUME)
+					if (voltype == VOLTYPE_SESSION_VOLUME || voltype == VOLTYPE_TRADE_VOLUME)
 						pt6[i].fVol = (float)vec_reit->GetVolume(); // real volume this tick (to be converted to session volume)
 					else if (voltype == VOLTYPE_SESSION_NUMTRADES)
 						pt6[i].fVol = (float)1; // tick volume this tick (to be converted to session tick frequency)
-					else
+					else						
 						pt6[i].fVol = 0;
 
 
@@ -274,7 +274,8 @@ int client::can_get_history(DTC::s_SecurityDefinitionResponse* def, DATE tStart,
 				}
 			}
 			const int t6_qty = i;
-			emulate_session_volume(pt6, t6_qty);
+			if(voltype == VOLTYPE_SESSION_VOLUME || voltype == VOLTYPE_SESSION_NUMTRADES)
+				emulate_session_volume(pt6, t6_qty);
 			return t6_qty;
 		}
 		else if (
@@ -310,7 +311,7 @@ int client::can_get_history(DTC::s_SecurityDefinitionResponse* def, DATE tStart,
 					pt6[i].fOpen = value;
 					pt6[i].fClose = value;
 					pt6[i].fVal = 0; // not used
-					if (voltype == VOLTYPE_SESSION_VOLUME)
+					if (voltype == VOLTYPE_SESSION_VOLUME || voltype == VOLTYPE_TRADE_VOLUME)
 						pt6[i].fVol = (float)vec_reit->GetVolume(); // real volume this tick (to be converted to session volume)
 					else if (voltype == VOLTYPE_SESSION_NUMTRADES)
 						pt6[i].fVol = (float)1; // tick volume this tick (to be converted to session tick frequency)
@@ -322,7 +323,8 @@ int client::can_get_history(DTC::s_SecurityDefinitionResponse* def, DATE tStart,
 				}
 			}
 			const int t6_qty = i;
-			emulate_session_volume(pt6, t6_qty);
+			if (voltype == VOLTYPE_SESSION_VOLUME || voltype == VOLTYPE_SESSION_NUMTRADES)
+				emulate_session_volume(pt6, t6_qty);
 			return t6_qty;
 		}
 		else if (
@@ -356,7 +358,7 @@ int client::can_get_history(DTC::s_SecurityDefinitionResponse* def, DATE tStart,
 					pt6[i].fLow = (float)vec_reit->GetLowPrice();
 					pt6[i].fClose = (float)vec_reit->GetLastPrice();
 					pt6[i].fVal = 0; //not used
-					if (voltype == VOLTYPE_SESSION_VOLUME)
+					if (voltype == VOLTYPE_SESSION_VOLUME || voltype == VOLTYPE_TRADE_VOLUME)
 						pt6[i].fVol = (float)vec_reit->GetVolume(); // real volume this bar (to be converted to session volume)
 					else if (voltype == VOLTYPE_SESSION_NUMTRADES)
 						pt6[i].fVol = (float)vec_reit->GetNumTrades(); // tick volume this bar (to be converted to session tick frequency)
@@ -369,7 +371,8 @@ int client::can_get_history(DTC::s_SecurityDefinitionResponse* def, DATE tStart,
 			}
 			const int t6_qty = i;
 			//save_to_file(pt6, t6_qty);
-			emulate_session_volume(pt6, t6_qty);
+			if (voltype == VOLTYPE_SESSION_VOLUME || voltype == VOLTYPE_SESSION_NUMTRADES)
+				emulate_session_volume(pt6, t6_qty);
 			return t6_qty;
 		}
 		else
