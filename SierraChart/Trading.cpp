@@ -189,6 +189,7 @@ int client::zt_BrokerBuy2(char* ZorroAsset, int Amount, double StopDist, double 
 	else
 		order.OpenOrClose = TRADE_CLOSE;
 
+	b.expect(sol_OrderUpdate_ClientOrderID,(std::string)order.GetClientOrderID());
 	// send the order
 	write_async(order);
 
