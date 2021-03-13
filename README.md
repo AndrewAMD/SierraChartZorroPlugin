@@ -25,7 +25,7 @@ Build in Visual Studio 2017 or greater, linking to the above dependencies.  This
 
 To install the plugin, simply place the SierraChart.dll file in the Plugin folder where Zorro is installed.
 
-[The DLL release builds can be found here.](https://github.com/AndrewAMD/SierraChartZorroPlugin/tree/master/releases)
+[The DLL release builds can be found here.](https://github.com/AndrewAMD/SierraChartZorroPlugin/releases)
 
 ## About Sierra Chart
 
