@@ -50,9 +50,6 @@ To set up Sierra Chart's DTC Server:
   * Optional: If you have multiple installations of Sierra Chart, make sure that each installation has unique DTC ports.  For example, installation 1 uses ports 11099, 11097, and 11098, and installation 2 uses ports 11096, 11095, and 11094 for the Listening Port, Historical Data Port, and the TLS Historical Data Port, respectively.
   * Click OK.
 
-Here are the "ideal default settings", for simply accessing the platform on your own computer:
-![Ideal default settings](https://raw.githubusercontent.com/AndrewAMD/gist/master/images/screenshots/0001.JPG)
-
 If you need multiple instances of Sierra Chart to trade with two brokers at the same time, you will need a second installation of Sierra Chart on your computer.  To do this:
 * Follow [these instructions](https://www.sierrachart.com/index.php?page=doc/NewInstance.php).
 * Also, make sure that the DTC Ports are unique for every Sierra Chart installation on the same host.
