@@ -12,14 +12,10 @@ This plugin was written in Win32 C/C++ using Visual Studio 2017.
 
 This plugin depends on the following libraries:
 
-* Boost libraries, 1.67 or greater
-  * Boost Asio (for asynchronous network communications)
-  * Boost UUID (to generate order Client ID's)
-* OpenSSL (for TLS 1.2 encryption)
-* zlib (optional historical data compression)
-* DTC Protocol library
+* Asio standalone library (included)
+* DTC Protocol library (included)
 
-Build in Visual Studio 2017 or greater, linking to the above dependencies.  This plugin must be compiled in 32-bit (x86) in order to be compatible with Zorro.
+Build in Visual Studio 2019 or greater.  This plugin must be compiled in 32-bit (x86) in order to be compatible with Zorro.
 
 ## Installation Instructions
 
@@ -41,15 +37,17 @@ A Sierra Chart instance can be accessed locally or over the internet. This plugi
 
 To set up Sierra Chart's DTC Server:
 * Open Sierra Chart
-* Global Settings -> Data/Trade Service Settings
-* SC Server Settings
-  * Check "Enable DTC Protocol Server"
-  * Check "Require TLS"
+* Global Settings -> Sierra Chart Server Settings
+* Sierra Chart Server Settings Window:
+  * Click "[DTC Protocol Server]" at the top
+  * Set "DTC Protocol Server" to "Yes"
+  * Set "Listening Port" to "11099"
+  * Set "Historical Data Port" to "11097"
+  * Set "Require TLS" to "No"
   * Encoding must either be set to "Automatic" or "Binary"
-  * Optional: Check "Allow Trading"
-  * Optional: Check "Require Authentication"
-  * Optional: If you have multiple installations of Sierra Chart, make sure that each installation has unique DTC ports.  For example, installation 1 uses ports 11099, 11098, and 11097, and installation 2 uses ports 11096, 11095, and 11094 for the Listening Port, Historical Data Port, and the TLS Historical Data Port, respectively.
-  * Optional: Allowed Incoming IP's should be set to "Local Computer Only", unless you plan on accessing this installation from another computer on the LAN (Local Subnet Only) or the Internet (Any IP).  (If you are opening the port to the interet, consider requiring authentication.)
+  * Optional: Set "Allow Trading" to "Yes"
+  * Optional: Set "Require Authentication" to "Yes"
+  * Optional: If you have multiple installations of Sierra Chart, make sure that each installation has unique DTC ports.  For example, installation 1 uses ports 11099, 11097, and 11098, and installation 2 uses ports 11096, 11095, and 11094 for the Listening Port, Historical Data Port, and the TLS Historical Data Port, respectively.
   * Click OK.
 
 Here are the "ideal default settings", for simply accessing the platform on your own computer:
@@ -67,17 +65,16 @@ The user field gets parsed for multiple arguments.  Each argument is separated b
 * "field1:value1 field2:value2"
 
 For example, the user field can look like this:
-* "sa:1234 ta:5678 h:127.0.0.1 p1:11099 p2:11097 zlib"
+* "sa:1234 ta:5678 h:127.0.0.1 p1:11099 p2:11097"
 
 Fields:
 * "sa" - Sierra Chart Account - only required if the DTC Server has "Require Authentication" checked. By default, this field is blank.
 * "ta" - Trade Account - this is either your broker's account number or a simulated account on your Sierra Chart platform.  By default, "Sim1", a simulated account.
 * "h" - DTC server hostname. Default value: "127.0.0.1" (localhost - the same computer)
 * "p1" - Listening Port. Default value: "11099"
-* "p2" - TLS Historical Data Port. Default value: "11097"
-* "zlib" - If this flag is provided, zlib will be enabled for transfer of historical data.  By default, disabled.  This setting reduces bandwidth between Zorro and the DTC server, but it increases the processing load.
+* "p2" - Historical Data Port. Default value: "11097"
 
-To set all the fields to their default value, leave the user field completely blank.  This configuration is compatible with the default DTC server settings shown above.
+To set all the fields to their default value, leave the user field completely blank.  This default configuration is compatible with the default DTC server settings shown above.
 
 ### Password field
 
@@ -98,65 +95,159 @@ The following standard Zorro Broker API functions have been implemented:
 * BrokerBuy2 (orders only)
 * BrokerTrade (orders only)
 * BrokerCommand standard functions:
-  * GET\_MAXTICKS
-  * SET\_HWND
-  * SET\_SYMBOL
-  * GET\_VOLTYPE
-  * SET\_VOLTYPE
   * GET\_PRICETYPE
   * SET\_PRICETYPE
   * SET\_ORDERTYPE
-  * GET\_UUID
-  * SET\_UUID
-  * GET\_POSITION
-  * GET\_COMPLIANCE
-  * SET\_PATCH
-  * GET\_BOOK
+  * GET\_WAIT
+  * SET\_WAIT
+  * GET\_MAXTICKS
+  * SET\_SYMBOL
+  * DO\_CANCEL
+  * GET\_FUTURES  (must set SC_SET_FUTURES_CONTRACT_CONFIG first)
+  * SET\_HWND
+
 
 
 In addition, BrokerCommand supports some newly-defined functions:
-* SET\_DIVIDEND\_ADJ
-  * Input: 1 for dividend-adjusted historical data, 0 for unadjusted historical data.
-  * Returns 1 if command accepted, 0 if rejected.
-* GET\_DTCSECURITYDEF
-  * Input: Pointer to a DTCSECURITYDEF struct. GET\_DTCSECURITYDEF will look up a Security with symbol set with SET_SYMBOL.  The DTCSECURITYDEF struct will be filled with the original values from the DTC server.
-  * Returns: 1 if operation was successful, 0 if failed.
+* SC\_GET\_SNAPSHOT (must set SET\_SYMBOL first)
+  * Input: Pointer to user-supplied SC\_SNAPSHOT struct for symbol set via SET\_SYMBOL.  Plugin will copy values to struct.
+  * Returns 1 if successful, 0 if failure.
+* SC\_GET\_SECURITYDEF (must set SET\_SYMBOL first)
+  * Input: Pointer to user-supplied SC\_SECURITYDEF struct for symbol set via SET\_SYMBOL.  Plugin will copy values to struct.
+  * Returns 1 if successful, 0 if failure.
+* SC\_SET\_ORDERBLOCKMODE
+  * Input: 1 to enable, 0 to disable. If enabled, Zorro will wait for an order to be filled before returning from enterLong/enterShort.
+  * Returns 1 if successful, 0 if failure.
+* SC\_SET\_FUTURES_CONTRACT_CONFIG (must set SET\_SYMBOL first)
+  * Input: An addition of all month flags for any given futures contract, e.g. MO_MAR|MO_JUN|MO_SEP|MO_DEC for March, June, September, and December. (See MO_XXX #defines below.)  After which, user can call GET_FUTURES to see which contracts are available.
+
+## Example Test Script
 ```c++
-#define SET_DIVIDEND_ADJ 140 // Input 1 to enable dividend adjusted history, 0 for no dividend adjustment
-#define GET_DTCSECURITYDEF 69 
-typedef struct DTCSECURITYDEF
-{
-	char Symbol[64];
-	char Exchange[16];
+#define MO_JAN (1<<0)
+#define MO_FEB (1<<1)
+#define MO_MAR (1<<2)
+#define MO_APR (1<<3)
+#define MO_MAY (1<<4)
+#define MO_JUN (1<<5)
+#define MO_JUL (1<<6)
+#define MO_AUG (1<<7)
+#define MO_SEP (1<<8)
+#define MO_OCT (1<<9)
+#define MO_NOV (1<<10)
+#define MO_DEC (1<<11)
+#define SC_GET_SNAPSHOT                6001
+#define SC_GET_SECURITYDEF             6002
+#define SC_SET_ORDERBLOCKMODE          6003 // 1: ENABLE, 0: DISABLE BLOCKING ON ORDER PLACEMENT
+#define SC_SET_FUTURES_CONTRACT_CONFIG 6004 
+typedef struct SC_SNAPSHOT {
+	double SessionSettlementPrice;
+	double SessionOpenPrice;
+	double SessionHighPrice;
+	double SessionLowPrice;
+	double SessionVolume;
+	unsigned int SessionNumTrades;
+	unsigned int OpenInterest;
+	double vBidPrice;
+	double vAskPrice;
+	double vAskQuantity;
+	double vBidQuantity;
+	double vLastTradePrice;
+	double vLastTradeVolume;
+	DATE LastTradeDateTime;
+	DATE BidAskDateTime;
+	DATE SessionSettlementDateTime;
+	DATE TradingSessionDate;
+} SC_SNAPSHOT;
+typedef struct SC_SECURITYDEF{
+	char sSymbol[64];
+	char sExchange[16];
 	int SecurityType;					// See DTC SecurityTypeEnum
-	char Description[64];
+	char sDescription[64];
 	float MinPriceIncrement;
 	int PriceDisplayFormat;				// see DTC PriceDisplayFormatEnum
 	float CurrencyValuePerIncrement;
 	float FloatToIntPriceMultiplier;
 	float IntToFloatPriceDivisor;
-	char UnderlyingSymbol[32];
+	char sUnderlyingSymbol[32];
 	bool UpdatesBidAskOnly;
 	float StrikePrice;
 	int PutOrCall;						// 0: unset, 1: call, 2: put
 	unsigned int ShortInterest;
-	unsigned int SecurityExpirationDate;
+	DATE SecurityExpirationDate;
 	float BuyRolloverInterest;
 	float SellRolloverInterest;
 	float EarningsPerShare;
 	unsigned int SharesOutstanding;
 	float IntToFloatQuantityDivisor;
-	bool HasMarketDepthData;
+	unsigned char HasMarketDepthData;
 	float DisplayPriceMultiplier;
-	char ExchangeSymbol[64];
+	char sExchangeSymbol[64];
 	float InitialMarginRequirement;
 	float MaintenanceMarginRequirement;
-	char Currency[8];
-} DTCSECURITYDEF;
-```
+	char sCurrency[8];
+	float ContractSize;
+	unsigned int OpenInterest;
+	DATE RolloverDate;
+	unsigned char IsDelayed;
+} SC_SECURITYDEF;
 
-## Known Issues
-* As of this writing, it is not possible to support standard broker commands GET_FUTURES and GET_OPTIONS.  This will be possible as soon as Sierra Chart supports getting symbols by underlying.  Per my discussions with their support, it is likely they will support acquiring futures symbols and not options symbols.  As a workaround to this, search for the individual symbols directly using the GET_DTCSECURITYDEF BrokerCommand.  
+
+CONTRACT Cons[MAX_CONTRACTS];
+void test_futures(){
+	printf("\n------------");
+	memset(Cons,0,MAX_CONTRACTS*sizeof(CONTRACT));
+	string sym = "ES?##";
+	brokerCommand(SET_SYMBOL,sym);
+	brokerCommand(SC_SET_FUTURES_CONTRACT_CONFIG, MO_MAR|MO_JUN|MO_SEP|MO_DEC); // Must have called SET_SYMBOL first!
+	int N = brokerCommand(GET_FUTURES,Cons);
+	printf("\nReceived %d %s futures contracts...",N,sym);
+	
+	int i;
+	for(i=0;i<N;i++){
+		CONTRACT* p = &Cons[i];
+		printf("\n[%d] type: %d, m: %0.1f, ex: %d, str: %0.2f",
+			i,
+			p->Type,
+			(var)p->fVal,
+			p->Expiry,
+			(var)p->fStrike);
+	}
+}
+void test_dtcsecuritydef(){
+	printf("\n------------");
+	string sym = "ESM21";
+	SC_SECURITYDEF d;
+	memset(&d,0,sizeof(d));
+	brokerCommand(SET_SYMBOL,sym);
+	brokerCommand(SC_GET_SECURITYDEF,&d);
+	printf("\nsSymbol: %s",d.sSymbol);
+	printf("\nsDescription: %s",d.sDescription);
+	printf("\nMinPriceIncrement: %0.6f",(var)d.MinPriceIncrement);
+}
+void test_snapshot(){
+	printf("\n------------");
+	string sym = "ESM21";
+	SC_SNAPSHOT s;
+	memset(&s,0,sizeof(s));
+	brokerCommand(SET_SYMBOL,sym);
+	brokerCommand(SC_GET_SNAPSHOT,&s);
+	printf("\nSC symbol: %s",sym);
+	printf("\nvBidPrice: %0.6f",s.vBidPrice);
+	printf("\nvAskPrice: %0.6f",s.vAskPrice);
+	printf("\nSessionVolume: %0.6f",s.SessionVolume);
+	printf("\nTrading session date: %d",ymd(s.TradingSessionDate));
+}
+
+
+void main(void){
+	set(LOGFILE);
+	if(!Live){printf("\nPress [Trade]."); return;}
+	test_futures();
+	test_dtcsecuritydef();
+	test_snapshot();
+	printf("\nDone!");
+}
+```
 
 ## License
 
@@ -170,11 +261,8 @@ This project has an MIT-style license. See the LICENSE.md file for more details.
   * [BrokerCommand](http://zorro-project.com/manual/en/brokercommand.htm)
 * [Sierra Chart](http://www.sierrachart.com)
 * [DTC Protocol](http://www.dtcprotocol.org)
-* [Boost](https://www.boost.org)
-  * [Boost Asio](https://www.boost.org/doc/libs/1_68_0/doc/html/boost_asio.html)
-  * [Boost UUID](https://www.boost.org/doc/libs/1_68_0/libs/uuid/doc/index.html)
-* [OpenSSL](https://www.openssl.org)
-* [zlib](https://www.zlib.net)
+* [Asio](https://think-async.com/Asio/)
+
 
 ## Contact Info
 
