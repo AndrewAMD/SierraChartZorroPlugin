@@ -196,19 +196,38 @@ void test_futures(){
 	string sym = "ES?##";
 	brokerCommand(SET_SYMBOL,sym);
 	brokerCommand(SC_SET_FUTURES_CONTRACT_CONFIG, MO_MAR|MO_JUN|MO_SEP|MO_DEC); // Must have called SET_SYMBOL first!
-	int N = brokerCommand(GET_FUTURES,Cons);
-	printf("\nReceived %d %s futures contracts...",N,sym);
 	
+	
+	int N = brokerCommand(GET_FUTURES,Cons);
+	printf("\nReceived %d %s futures contracts via GET_FUTURES...",N,sym);
 	int i;
 	for(i=0;i<N;i++){
 		CONTRACT* p = &Cons[i];
-		printf("\n[%d] type: %d, m: %0.1f, ex: %d, str: %0.2f",
+		printf("\n[%d] type: %d, m: %0.1f, ex: %d, str: %0.2f, pr: %0.2f",
 			i,
 			p->Type,
 			(var)p->fVal,
 			p->Expiry,
-			(var)p->fStrike);
+			(var)p->fStrike,
+			(var)p->fAsk
+			);
 	}
+	
+	N = contractUpdate(sym,0,FUTURE);
+	printf("\nReceived %d %s futures contracts via contractUpdate()...",N,sym);
+	for(i=1;i<=N;i++){
+		CONTRACT* p = contract(i);
+		if(!p) continue;
+		printf("\n[%d] type: %d, m: %0.1f, ex: %d, str: %0.2f, pr: %0.2f",
+			i,
+			p->Type,
+			(var)p->fVal,
+			p->Expiry,
+			(var)p->fStrike,
+			contractPrice(p));
+	}
+
+	
 }
 void test_dtcsecuritydef(){
 	printf("\n------------");
