@@ -30,14 +30,15 @@ struct s_Asset {
 	std::string UnderlyingSymbol; //only filled if configured with SC_SET_FUTURES_CONTRACT_CONFIG
 	std::string ZorroSymbol; // only filled if Zorro uses -FUT- symbol.
 	s_SecurityDefinitionResponse definition;
+	s_MarketDataSnapshot s;
 	bool is_defined = false;
 	bool is_subscribed = false;
 	uint32_t SymbolID = 0;
 	std::map<int, double> mBook;  // book_key to volume (bid is negaive key)
 	int nExpiry = 0;
-	double vPrice = 0;
-	double vSpread = 0;
-	double vVolume = 0;
+	//double vPrice = 0;
+	//double vSpread = 0;
+	//double vVolume = 0;
 	double vPip = 0; //"pricePrecision"
 	double vPipCost = 0;
 	double vLotAmount = 0; // Based on present value of SET_AMOUNT
@@ -84,22 +85,9 @@ DLLFUNC int BrokerAsset(
 	double* pPip, double* pPipCost, double* pLotAmount,
 	double* pMarginCost, double* pRollLong, double* pRollShort);
 
-#define MO_JAN (1<<0)
-#define MO_FEB (1<<1)
-#define MO_MAR (1<<2)
-#define MO_APR (1<<3)
-#define MO_MAY (1<<4)
-#define MO_JUN (1<<5)
-#define MO_JUL (1<<6)
-#define MO_AUG (1<<7)
-#define MO_SEP (1<<8)
-#define MO_OCT (1<<9)
-#define MO_NOV (1<<10)
-#define MO_DEC (1<<11)
 #define SC_GET_SNAPSHOT                6001
 #define SC_GET_SECURITYDEF             6002
 #define SC_SET_ORDERBLOCKMODE          6003 // 1: ENABLE, 0: DISABLE BLOCKING ON ORDER PLACEMENT
-#define SC_SET_FUTURES_CONTRACT_CONFIG 6004 
 #pragma pack(push,1)
 typedef struct SC_SNAPSHOT {
 	double SessionSettlementPrice;
@@ -131,7 +119,7 @@ typedef struct SC_SECURITYDEF{
 	float FloatToIntPriceMultiplier;
 	float IntToFloatPriceDivisor;
 	char sUnderlyingSymbol[32];
-	bool UpdatesBidAskOnly;
+	unsigned char UpdatesBidAskOnly;
 	float StrikePrice;
 	int PutOrCall;						// 0: unset, 1: call, 2: put
 	unsigned int ShortInterest;
