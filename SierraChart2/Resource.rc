@@ -51,8 +51,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,0
- PRODUCTVERSION 1,0,0,0
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -69,12 +69,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Andrew M. Dolder, P.E. (andrew@vitaltrades.com)"
             VALUE "FileDescription", "Broker plugin for Zorro, DTC client for Sierra Chart"
-            VALUE "FileVersion", "1.0.0.0"
+            VALUE "FileVersion", "1.0.0.1"
             VALUE "InternalName", "SierraChart.dll"
             VALUE "LegalCopyright", "Copyright (C) 2021 Andrew M. Dolder, P.E. (andrew@vitaltrades.com)"
             VALUE "OriginalFilename", "SierraChart.dll"
             VALUE "ProductName", "Sierra Chart DTC Client for Zorro"
-            VALUE "ProductVersion", "1.0.0.0"
+            VALUE "ProductVersion", "1.0.0.1"
         END
     END
     BLOCK "VarFileInfo"
