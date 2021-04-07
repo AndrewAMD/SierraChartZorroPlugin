@@ -100,7 +100,7 @@ The following standard Zorro Broker API functions have been implemented:
   * GET\_MAXTICKS
   * SET\_SYMBOL
   * DO\_CANCEL
-  * GET\_FUTURES  (must set SC_SET_FUTURES_CONTRACT_CONFIG first)
+  * GET\_FUTURES
   * SET\_HWND
 
 
@@ -115,27 +115,13 @@ In addition, BrokerCommand supports some newly-defined functions:
 * SC\_SET\_ORDERBLOCKMODE
   * Input: 1 to enable, 0 to disable. If enabled, Zorro will wait for an order to be filled before returning from enterLong/enterShort.
   * Returns 1 if successful, 0 if failure.
-* SC\_SET\_FUTURES_CONTRACT_CONFIG (must set SET\_SYMBOL first)
-  * Input: An addition of all month flags for any given futures contract, e.g. MO_MAR|MO_JUN|MO_SEP|MO_DEC for March, June, September, and December. (See MO_XXX #defines below.)  After which, user can call GET_FUTURES to see which contracts are available.
 
 ## Example Test Script
 ```c++
-#define MO_JAN (1<<0)
-#define MO_FEB (1<<1)
-#define MO_MAR (1<<2)
-#define MO_APR (1<<3)
-#define MO_MAY (1<<4)
-#define MO_JUN (1<<5)
-#define MO_JUL (1<<6)
-#define MO_AUG (1<<7)
-#define MO_SEP (1<<8)
-#define MO_OCT (1<<9)
-#define MO_NOV (1<<10)
-#define MO_DEC (1<<11)
+#include <default.c>
 #define SC_GET_SNAPSHOT                6001
 #define SC_GET_SECURITYDEF             6002
 #define SC_SET_ORDERBLOCKMODE          6003 // 1: ENABLE, 0: DISABLE BLOCKING ON ORDER PLACEMENT
-#define SC_SET_FUTURES_CONTRACT_CONFIG 6004 
 typedef struct SC_SNAPSHOT {
 	double SessionSettlementPrice;
 	double SessionOpenPrice;
@@ -166,7 +152,7 @@ typedef struct SC_SECURITYDEF{
 	float FloatToIntPriceMultiplier;
 	float IntToFloatPriceDivisor;
 	char sUnderlyingSymbol[32];
-	bool UpdatesBidAskOnly;
+	unsigned char UpdatesBidAskOnly;
 	float StrikePrice;
 	int PutOrCall;						// 0: unset, 1: call, 2: put
 	unsigned int ShortInterest;
@@ -188,28 +174,25 @@ typedef struct SC_SECURITYDEF{
 	unsigned char IsDelayed;
 } SC_SECURITYDEF;
 
-
 CONTRACT Cons[MAX_CONTRACTS];
 void test_futures(){
 	printf("\n------------");
 	memset(Cons,0,MAX_CONTRACTS*sizeof(CONTRACT));
 	string sym = "ES?##";
 	brokerCommand(SET_SYMBOL,sym);
-	brokerCommand(SC_SET_FUTURES_CONTRACT_CONFIG, MO_MAR|MO_JUN|MO_SEP|MO_DEC); // Must have called SET_SYMBOL first!
-	
-	
 	int N = brokerCommand(GET_FUTURES,Cons);
 	printf("\nReceived %d %s futures contracts via GET_FUTURES...",N,sym);
 	int i;
 	for(i=0;i<N;i++){
 		CONTRACT* p = &Cons[i];
-		printf("\n[%d] type: %d, m: %0.1f, ex: %d, str: %0.2f, pr: %0.2f",
+		printf("\n[%d] type: %d, m: %0.1f, ex: %d, str: %0.2f, ask: %0.2f, bid: %0.2f",
 			i,
 			p->Type,
 			(var)p->fVal,
 			p->Expiry,
 			(var)p->fStrike,
-			(var)p->fAsk
+			(var)p->fAsk,
+			(var)p->fBid
 			);
 	}
 	
@@ -218,16 +201,16 @@ void test_futures(){
 	for(i=1;i<=N;i++){
 		CONTRACT* p = contract(i);
 		if(!p) continue;
-		printf("\n[%d] type: %d, m: %0.1f, ex: %d, str: %0.2f, pr: %0.2f",
+		printf("\n[%d] type: %d, m: %0.1f, ex: %d, str: %0.2f, ask: %0.2f, bid: %0.2f",
 			i,
 			p->Type,
 			(var)p->fVal,
 			p->Expiry,
 			(var)p->fStrike,
-			contractPrice(p));
+			(var)p->fAsk,
+			(var)p->fBid
+			);
 	}
-
-	
 }
 void test_dtcsecuritydef(){
 	printf("\n------------");
@@ -263,6 +246,7 @@ void main(void){
 	test_snapshot();
 	printf("\nDone!");
 }
+
 ```
 
 ## License
