@@ -33,94 +33,70 @@ void handle_MarketDataSnapshot(t_feedid id, void* pMsg) {
 	m.CopyFrom(pMsg);
 	s_Asset* pA = get_asset_by_SymbolID(m.SymbolID);
 	if (!pA)return;
-	if (g_PriceType == 1) {
-		double ask = 0, bid = 0;
-		if (m.AskPrice != DBL_MAX)ask = m.AskPrice;
-		if (m.BidPrice != DBL_MAX)bid = m.BidPrice;
-		if (ask > 0 && bid > 0) {
-			if (ask > 0) pA->vPrice = ask;
-			if (ask > 0 && bid > 0) pA->vSpread = ask - bid;
-		}
-	}
-	if (m.SessionVolume != DBL_MAX)pA->vVolume = m.SessionVolume;
-	
+	pA->s = m;
 }
 void handle_MarketDataUpdateTrade(t_feedid id, void* pMsg) {
 	s_MarketDataUpdateTrade m;
 	m.CopyFrom(pMsg);
 	s_Asset* pA = get_asset_by_SymbolID(m.SymbolID);
 	if (!pA)return;
-	if (g_PriceType == 2) {
-		pA->vPrice = m.Price;
-	}
-	if (m.Volume != DBL_MAX)pA->vVolume += m.Volume;
+	pA->s.SessionVolume += m.Volume;
+	pA->s.LastTradePrice = m.Price;
+	pA->s.LastTradeDateTime = m.DateTime;
 }
 void handle_MarketDataUpdateTradeWithUnbundledIndicator2(t_feedid id, void* pMsg) {
 	s_MarketDataUpdateTradeWithUnbundledIndicator2 m;
 	m.CopyFrom(pMsg);
 	s_Asset* pA = get_asset_by_SymbolID(m.SymbolID);
 	if (!pA)return;
-	if (g_PriceType == 2) {
-		pA->vPrice = m.Price;
-	}
-	if (m.Volume != DBL_MAX)pA->vVolume += m.Volume;
+	pA->s.SessionVolume += m.Volume;
+	pA->s.LastTradePrice = m.Price;
+	pA->s.LastTradeDateTime = m.DateTime;
 }
 void handle_MarketDataUpdateTradeNoTimestamp(t_feedid id, void* pMsg) {
 	s_MarketDataUpdateTradeNoTimestamp m;
 	m.CopyFrom(pMsg);
 	s_Asset* pA = get_asset_by_SymbolID(m.SymbolID);
 	if (!pA)return;
-	if (g_PriceType == 2) {
-		pA->vPrice = m.Price;
-	}
-	if (m.Volume != DBL_MAX)pA->vVolume += m.Volume;
+	pA->s.SessionVolume += m.Volume;
+	pA->s.LastTradePrice = m.Price;
 }
 void handle_MarketDataUpdateTradeCompact(t_feedid id, void* pMsg) {
 	s_MarketDataUpdateTradeCompact m;
 	m.CopyFrom(pMsg);
 	s_Asset* pA = get_asset_by_SymbolID(m.SymbolID);
 	if (!pA)return;
-	if (g_PriceType == 2) {
-		pA->vPrice = m.Price;
-	}
-	if (m.Volume != DBL_MAX)pA->vVolume += m.Volume;
+	pA->s.SessionVolume += m.Volume;
+	pA->s.LastTradePrice = m.Price;
+	pA->s.LastTradeDateTime = m.DateTime;
 }
 void handle_MarketDataUpdateBidAsk(t_feedid id, void* pMsg) {
 	s_MarketDataUpdateBidAsk m;
 	m.CopyFrom(pMsg);
 	s_Asset* pA = get_asset_by_SymbolID(m.SymbolID);
 	if (!pA)return;
-	if (g_PriceType == 1) {
-		double ask = 0, bid = 0;
-		if (m.AskPrice != DBL_MAX)ask = m.AskPrice;
-		if (m.BidPrice != DBL_MAX)bid = m.BidPrice;
-		if (ask > 0 && bid > 0) {
-			if (ask > 0) pA->vPrice = ask;
-			if (ask > 0 && bid > 0) pA->vSpread = ask - bid;
-		}
-	}
+	pA->s.BidPrice = m.BidPrice;
+	pA->s.BidQuantity = m.BidQuantity;
+	pA->s.AskPrice = m.AskPrice;
+	pA->s.AskQuantity = m.AskQuantity;
 }
 void handle_MarketDataUpdateBidAskCompact(t_feedid id, void* pMsg) {
 	s_MarketDataUpdateBidAskCompact m;
 	m.CopyFrom(pMsg);
 	s_Asset* pA = get_asset_by_SymbolID(m.SymbolID);
 	if (!pA)return;
-	if (g_PriceType == 1) {
-		double ask = 0, bid = 0;
-		if (m.AskPrice != DBL_MAX)ask = m.AskPrice;
-		if (m.BidPrice != DBL_MAX)bid = m.BidPrice;
-		if (ask > 0 && bid > 0) {
-			if (ask > 0) pA->vPrice = ask;
-			if (ask > 0 && bid > 0) pA->vSpread = ask - bid;
-		}
-	}
+	pA->s.BidPrice = m.BidPrice;
+	pA->s.BidQuantity = m.BidQuantity;
+	pA->s.AskPrice = m.AskPrice;
+	pA->s.AskQuantity = m.AskQuantity;
 }
 void handle_MarketDataUpdateSessionVolume(t_feedid id, void* pMsg) {
 	s_MarketDataUpdateSessionVolume m;
 	m.CopyFrom(pMsg);
 	s_Asset* pA = get_asset_by_SymbolID(m.SymbolID);
 	if (!pA)return;
-	if (m.Volume != DBL_MAX)pA->vVolume = m.Volume;
+	pA->s.SessionVolume = m.Volume;
+	pA->s.TradingSessionDate = m.TradingSessionDate;
 }
 void handle_MarketDepthReject(t_feedid id, void* pMsg) {
 	s_MarketDepthReject m;
