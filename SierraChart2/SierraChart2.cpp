@@ -395,7 +395,7 @@ bool ubc_subscribe(t_feedid id, void* pMsg, uint16_t Type, int32_t request_id, v
 	case MARKET_DATA_SNAPSHOT: {
 		s_MarketDataSnapshot re;
 		re.CopyFrom(pMsg);
-		if (re.SymbolID == pAsset->SymbolID && (re.BidPrice || re.AskPrice || re.LastTradePrice)) {
+		if (re.SymbolID == pAsset->SymbolID && (re.BidPrice && re.AskPrice && re.LastTradePrice)) {
 			pAsset->is_subscribed = true;
 			return true;
 		}
@@ -407,7 +407,7 @@ bool ubc_subscribe(t_feedid id, void* pMsg, uint16_t Type, int32_t request_id, v
 			pAsset->is_subscribed = false;
 			if (!g_BeQuiet) {
 				if (strlen(re.RejectText))zprintf("Rejected: \"%s\"", re.RejectText);
-				else zprintf("Rejected.");
+				else zprintf("%s subscribe: Rejected.",pAsset->SCSymbol.c_str());
 			}
 			return true;
 		}
@@ -435,7 +435,8 @@ DLLFUNC int BrokerAsset(
 		if (!pPrice && !pAsset->is_subscribed) { //subscribe
 			{
 				s_MarketDataRequest rq;
-				rq.SymbolID = pAsset->SymbolID = new_request_id();
+				if(!pAsset->SymbolID) pAsset->SymbolID = new_symbol_id();
+				rq.SymbolID = pAsset->SymbolID;
 				rq.RequestAction = SUBSCRIBE;
 				rq.SetSymbol(pAsset->SCSymbol.c_str());
 				cl_send(FEED_MAIN, &rq, rq.Size);
@@ -448,28 +449,28 @@ DLLFUNC int BrokerAsset(
 			pAsset->is_subscribed = true;
 			{
 				s_MarketDepthRequest rq;
+				if (!pAsset->SymbolID) pAsset->SymbolID = new_symbol_id();
 				rq.SymbolID = pAsset->SymbolID;
 				rq.RequestAction = SUBSCRIBE;
 				rq.SetSymbol(pAsset->SCSymbol.c_str());
 				cl_send(FEED_MAIN, &rq, rq.Size);
 				cl_drain(); // no need to block for market depth
 			}
-			if (pPrice && pAsset->vPrice != 0)           *pPrice = pAsset->vPrice;
-			if (pSpread && pAsset->vSpread != 0)         *pSpread = pAsset->vSpread;
-			if (pVolume && pAsset->vVolume != 0)         *pVolume = pAsset->vVolume;
-			if (pPip && pAsset->vPip != 0)               *pPip = pAsset->vPip;
-			if (pPipCost && pAsset->vPipCost != 0)       *pPipCost = pAsset->vPipCost;
-			//if (pLotAmount && pAsset->vLotAmount != 0)   *pLotAmount = pAsset->vLotAmount;
-			if (pMarginCost && pAsset->vMarginCost != 0) *pMarginCost = pAsset->vMarginCost;
-			if (pRollLong && pAsset->vRollLong != 0)     *pRollLong = pAsset->vRollLong;
-			if (pRollShort && pAsset->vRollShort != 0)   *pRollShort = pAsset->vRollShort;
-			
-			return 1;
 		}//subscribe
 
-		if (pPrice && pAsset->vPrice != 0)           *pPrice = pAsset->vPrice;
-		if (pSpread && pAsset->vSpread != 0)         *pSpread = pAsset->vSpread;
-		if (pVolume && pAsset->vVolume != 0)         *pVolume = pAsset->vVolume;
+		if (g_PriceType == 1) {//bid-ask spread
+			if (pPrice && pAsset->s.AskPrice>0 && pAsset->s.AskPrice != DBL_MAX) {
+				*pPrice = pAsset->s.AskPrice;
+				if (pSpread && pAsset->s.BidPrice >0 && pAsset->s.BidPrice != DBL_MAX) {
+					*pSpread = pAsset->s.AskPrice - pAsset->s.BidPrice;
+				}
+			}
+		}
+		else if (g_PriceType == 2) {// last trade price
+			if (pPrice && pAsset->s.LastTradePrice > 0 && pAsset->s.LastTradePrice != DBL_MAX) {
+				*pPrice = pAsset->s.LastTradePrice;
+			}
+		}
 		if (pPip && pAsset->vPip != 0)               *pPip = pAsset->vPip;
 		if (pPipCost && pAsset->vPipCost != 0)       *pPipCost = pAsset->vPipCost;
 		//if (pLotAmount && pAsset->vLotAmount != 0)   *pLotAmount = pAsset->vLotAmount;
@@ -903,6 +904,18 @@ bool ubc_snapshot(t_feedid id, void* pMsg, uint16_t Type, int32_t request_id, vo
 	return false;
 }
 
+int contract_sort(const void* a, const void* b) {
+	CONTRACT
+		* pa = (CONTRACT*)a,
+		* pb = (CONTRACT*)b;
+	if (pa->Expiry != pb->Expiry) {
+		return pa->Expiry - pb->Expiry;
+	}
+	if (pa->Type != pb->Type) {
+		return pa->Type - pb->Type;
+	}
+	return (int)(pa->fStrike - pb->fStrike);
+}
 DLLFUNC double BrokerCommand(int Command, DWORD dwParameter) {
 	cl_drain();
 	switch (Command) {
@@ -1025,57 +1038,68 @@ DLLFUNC double BrokerCommand(int Command, DWORD dwParameter) {
 			return 1;
 		}
 		return 0;
-	case SC_SET_FUTURES_CONTRACT_CONFIG: {
+	case GET_FUTURES: { //does not set multiplier
 		int today_yyyymmdd = get_todays_date_yyyymmdd();
-		int yr_first = today_yyyymmdd / 10000;
-		int yr_max = yr_first + 10;
-		const char* monthcodestr = get_monthcode_string((int)dwParameter);
-		int len = (int)strlen(monthcodestr);
-		int N = 0;
-		for (int yr = yr_first; yr <= yr_max; yr++) {
-			for (int i=0; i < len; i++) {
-				char sc_symbol[64];
-				strcpy_s(sc_symbol, g_Symbol);
-				auto p = strstr(sc_symbol, "?##");
-				if (!p)continue;
-				const char* myy = strf("%c%02d", monthcodestr[i], yr % 100);
-				memcpy_s(p, 3, myy, 3);
+		for (int nAttempts = 1; nAttempts <= 20; nAttempts++) {
+			if (nAttempts>1)zprintf("GET_FUTURES: Attempt %d of 20", nAttempts);
+			int yr_first = today_yyyymmdd / 10000;
+			int yr_max = yr_first + 10;
+			const char* monthcodestr = "FGHJKMNQUVXZ";//get_monthcode_string((int)dwParameter);
+			int len = (int)strlen(monthcodestr);
+			int N = 0;
+			for (int yr = yr_first; yr <= yr_max; yr++) {
+				for (int i = 0; i < len; i++) {
+					char sc_symbol[64];
+					strcpy_s(sc_symbol, g_Symbol);
+					auto p = strstr(sc_symbol, "?##");
+					if (!p)continue;
+					const char* myy = strf("%c%02d", monthcodestr[i], yr % 100);
+					memcpy_s(p, 3, myy, 3);
 
-				s_Asset* pA = get_asset_by_SCSymbol(sc_symbol);
-				if (!pA) continue;
-				if (!pA->is_defined) continue;
-				if (today_yyyymmdd > pA->nExpiry) continue;
-				g_BeQuiet = true;
-				int ret = BrokerAsset(sc_symbol, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-				g_BeQuiet = false;
-				if (!ret) continue;
-				pA = get_asset_by_SCSymbol(sc_symbol);
-				if (!pA) continue;
-				if (!pA->is_subscribed) continue;
-				if (!pA->nExpiry) continue;
+					s_Asset* pA = get_asset_by_SCSymbol(sc_symbol);
+					if (!pA) continue;
+					if (!pA->is_defined) continue;
+					if (today_yyyymmdd > pA->nExpiry) continue;
+					g_BeQuiet = true;
+					int ret = BrokerAsset(sc_symbol, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+					g_BeQuiet = false;
+					if (!ret) continue;
+					pA = get_asset_by_SCSymbol(sc_symbol);
+					if (!pA) continue;
+					if (!pA->is_subscribed) continue;
+					if (!pA->nExpiry) continue;
 
-				pA->UnderlyingSymbol = g_Symbol;
-				pA->ZorroSymbol = strf("%s-FUT-%08d", g_Symbol, pA->nExpiry);
-				N++;
+					pA->UnderlyingSymbol = g_Symbol;
+					pA->ZorroSymbol = strf("%s-FUT-%08d", g_Symbol, pA->nExpiry);
+					N++;
+				}
+			}
+			if (N) break;
+			for (int j = 0; j < 10; j++) { //wait up to one second to try again if no matches
+				cl_loiter();
 			}
 		}
-		return N;
-	}//SC_SET_FUTURES_CONTRACT_CONFIG
-	case GET_FUTURES: { //does not set multiplier
 		CONTRACT* p = (CONTRACT*)dwParameter;
-		int today_yyyymmdd = get_todays_date_yyyymmdd();
 		int N = 0;
 		for (const auto& ap : g_mAssets) {
-			const auto& a = ap.second;
+			const s_Asset& a = ap.second;
+			const s_MarketDataSnapshot& s = a.s;
 			if (a.UnderlyingSymbol != g_Symbol)continue;
 			if (a.nExpiry < today_yyyymmdd)continue;
 			if (!a.is_subscribed) continue;
 			memset(&p[N], 0, sizeof(CONTRACT));
 			p[N].Expiry = a.nExpiry;
 			p[N].Type = FUTURE;
+			if (s.AskPrice != DBL_MAX)p[N].fAsk = (float)s.AskPrice;
+			if (s.BidPrice != DBL_MAX)p[N].fBid = (float)s.BidPrice;
+			if (!p[N].fAsk) p[N].fAsk = (float)s.LastTradePrice;
+			if (!p[N].fBid) p[N].fBid = (float)s.LastTradePrice;
+			if (!p[N].fAsk) p[N].fAsk = (float)s.BidPrice;
+			if (!p[N].fBid) p[N].fBid = (float)s.AskPrice;
 			N++;
 			if (N == MAX_CONTRACTS) break;
 		}
+		qsort(p, N, sizeof(CONTRACT), contract_sort);
 		return N;
 	}//GET_FUTURES
 	case SET_HWND:
