@@ -27,7 +27,7 @@ TimeInForceEnum g_TimeInForce = TIF_DAY;
 int g_OrderBlockMode = 1;
 int g_nLastTradeID = 1;
 int g_OrderWait_ms = 60000;
-bool g_BeQuiet = false; // for special occasions where the output is too verbose
+bool g_IsScanningContracts = false; // for special occasions where the output is too verbose
 
 
 int new_TradeID() {return g_nLastTradeID = max(2, g_nLastTradeID + 1);}
@@ -405,7 +405,7 @@ bool ubc_subscribe(t_feedid id, void* pMsg, uint16_t Type, int32_t request_id, v
 		re.CopyFrom(pMsg);
 		if (re.SymbolID == pAsset->SymbolID) {
 			pAsset->is_subscribed = false;
-			if (!g_BeQuiet) {
+			if (!g_IsScanningContracts) {
 				if (strlen(re.RejectText))zprintf("Rejected: \"%s\"", re.RejectText);
 				else zprintf("%s subscribe: Rejected.",pAsset->SCSymbol.c_str());
 			}
@@ -433,18 +433,25 @@ DLLFUNC int BrokerAsset(
 		if (!pAsset)return 0;
 
 		if (!pPrice && !pAsset->is_subscribed) { //subscribe
-			{
+			for (int nAttempts = 1, maxattempts = 5; nAttempts <= maxattempts; nAttempts++) {
+				if (nAttempts > 1)zprintf("Attempt %d of %d...", nAttempts, maxattempts);
 				s_MarketDataRequest rq;
-				if(!pAsset->SymbolID) pAsset->SymbolID = new_symbol_id();
+				if (!pAsset->SymbolID) pAsset->SymbolID = new_symbol_id();
 				rq.SymbolID = pAsset->SymbolID;
 				rq.RequestAction = SUBSCRIBE;
 				rq.SetSymbol(pAsset->SCSymbol.c_str());
 				cl_send(FEED_MAIN, &rq, rq.Size);
 				cl_block(ubc_subscribe, FEED_MAIN, 0, pAsset);
 				if (!pAsset->is_subscribed) {
-					if(!g_BeQuiet)zprintf("%s: subscription failed!", pAsset->SCSymbol.c_str());
-					return 0;
+					if (g_IsScanningContracts) return 0;
+					if (nAttempts == maxattempts) {
+						zprintf("%s: subscription failed!", pAsset->SCSymbol.c_str());
+						return 0;
+					}
+					cl_wait_for(1000);
+					continue;
 				}
+				else break;
 			}
 			pAsset->is_subscribed = true;
 			{
@@ -1040,6 +1047,8 @@ DLLFUNC double BrokerCommand(int Command, DWORD dwParameter) {
 		return 0;
 	case GET_FUTURES: { //does not set multiplier
 		int today_yyyymmdd = get_todays_date_yyyymmdd();
+		char get_futures_symbol[64];
+		strcpy_s(get_futures_symbol, g_Symbol);
 		for (int nAttempts = 1; nAttempts <= 20; nAttempts++) {
 			if (nAttempts>1)zprintf("GET_FUTURES: Attempt %d of 20", nAttempts);
 			int yr_first = today_yyyymmdd / 10000;
@@ -1049,8 +1058,9 @@ DLLFUNC double BrokerCommand(int Command, DWORD dwParameter) {
 			int N = 0;
 			for (int yr = yr_first; yr <= yr_max; yr++) {
 				for (int i = 0; i < len; i++) {
+					if (!refresh())return 0;
 					char sc_symbol[64];
-					strcpy_s(sc_symbol, g_Symbol);
+					strcpy_s(sc_symbol, get_futures_symbol);
 					auto p = strstr(sc_symbol, "?##");
 					if (!p)continue;
 					const char* myy = strf("%c%02d", monthcodestr[i], yr % 100);
@@ -1060,42 +1070,39 @@ DLLFUNC double BrokerCommand(int Command, DWORD dwParameter) {
 					if (!pA) continue;
 					if (!pA->is_defined) continue;
 					if (today_yyyymmdd > pA->nExpiry) continue;
-					g_BeQuiet = true;
+					g_IsScanningContracts = true;
 					int ret = BrokerAsset(sc_symbol, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-					g_BeQuiet = false;
+					g_IsScanningContracts = false;
 					if (!ret) continue;
 					pA = get_asset_by_SCSymbol(sc_symbol);
 					if (!pA) continue;
 					if (!pA->is_subscribed) continue;
 					if (!pA->nExpiry) continue;
-
-					pA->UnderlyingSymbol = g_Symbol;
-					pA->ZorroSymbol = strf("%s-FUT-%08d", g_Symbol, pA->nExpiry);
+					pA->UnderlyingSymbol = get_futures_symbol;
+					pA->ZorroSymbol = strf("%s-FUT-%08d", get_futures_symbol, pA->nExpiry);
 					N++;
 				}
 			}
 			if (N) break;
-			for (int j = 0; j < 10; j++) { //wait up to one second to try again if no matches
-				cl_loiter();
-			}
+			cl_wait_for(1000); //wait up to one second to try again if no matches
 		}
 		CONTRACT* p = (CONTRACT*)dwParameter;
 		int N = 0;
 		for (const auto& ap : g_mAssets) {
+			if (!refresh())return 0;
 			const s_Asset& a = ap.second;
 			const s_MarketDataSnapshot& s = a.s;
-			if (a.UnderlyingSymbol != g_Symbol)continue;
+			if (a.UnderlyingSymbol != get_futures_symbol)continue;
 			if (a.nExpiry < today_yyyymmdd)continue;
 			if (!a.is_subscribed) continue;
 			memset(&p[N], 0, sizeof(CONTRACT));
 			p[N].Expiry = a.nExpiry;
 			p[N].Type = FUTURE;
+			if (a.definition.MinPriceIncrement > 0) {
+				p[N].fVal = a.definition.CurrencyValuePerIncrement / a.definition.MinPriceIncrement; //multiplier
+			}
 			if (s.AskPrice != DBL_MAX)p[N].fAsk = (float)s.AskPrice;
 			if (s.BidPrice != DBL_MAX)p[N].fBid = (float)s.BidPrice;
-			if (!p[N].fAsk) p[N].fAsk = (float)s.LastTradePrice;
-			if (!p[N].fBid) p[N].fBid = (float)s.LastTradePrice;
-			if (!p[N].fAsk) p[N].fAsk = (float)s.BidPrice;
-			if (!p[N].fBid) p[N].fBid = (float)s.AskPrice;
 			N++;
 			if (N == MAX_CONTRACTS) break;
 		}
