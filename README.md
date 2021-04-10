@@ -178,7 +178,7 @@ CONTRACT Cons[MAX_CONTRACTS];
 void test_futures(){
 	printf("\n------------");
 	memset(Cons,0,MAX_CONTRACTS*sizeof(CONTRACT));
-	string sym = "ES?##";
+	string sym = "ES?##"; // for Simulated Trading Service, or "ES?##-CME" for Sierra Chart Data Service
 	brokerCommand(SET_SYMBOL,sym);
 	int N = brokerCommand(GET_FUTURES,Cons);
 	printf("\nReceived %d %s futures contracts via GET_FUTURES...",N,sym);
@@ -214,7 +214,7 @@ void test_futures(){
 }
 void test_dtcsecuritydef(){
 	printf("\n------------");
-	string sym = "ESM21";
+	string sym = "ESM21"; // for Simulated Trading Service, or "ESM21-CME" for Sierra Chart Data Service
 	SC_SECURITYDEF d;
 	memset(&d,0,sizeof(d));
 	brokerCommand(SET_SYMBOL,sym);
@@ -227,7 +227,7 @@ void test_dtcsecuritydef(){
 }
 void test_snapshot(){
 	printf("\n------------");
-	string sym = "ESM21";
+	string sym = "ESM21"; // for Simulated Trading Service, or "ESM21-CME" for Sierra Chart Data Service
 	SC_SNAPSHOT s;
 	memset(&s,0,sizeof(s));
 	brokerCommand(SET_SYMBOL,sym);
