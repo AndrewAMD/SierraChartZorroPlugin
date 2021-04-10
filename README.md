@@ -248,6 +248,10 @@ void main(void){
 }
 
 ```
+## Known Issues
+
+* The DTC server might sometimes refuse subscription requests, even when a given symbol can be subscribed to! The plugin attempts to work around this by repeatedly attempting to subscribe.
+* The DTC server might produce an invalid snapshot for a symbol if you're not subscribed to the given symbol!
 
 ## License
 
