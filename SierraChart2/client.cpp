@@ -213,6 +213,13 @@ void cl_loiter() {
     }
 }
 
+void cl_wait_for(int ms) {
+    clo::time_point time_to_return = clo::now() + cro::milliseconds(ms);
+    while (clo::now() < time_to_return) {
+        cl_loiter();
+    }
+}
+
 
 void cl_connect(t_feedid id, const char* host, const char* port) {
     pS[id].reset();
@@ -275,13 +282,20 @@ void cl_shutdown(t_feedid id) {
         self->stopped = true;
         error_code ec;
 
+        // https://stackoverflow.com/questions/1993216/boostasio-cleanly-disconnecting
+        // Gracefully shutdown socket
+        while (ioc.poll_one()) {};// drain tasks
+        pS[id]->s.shutdown(tcp::socket::shutdown_both,ec);
+        if (ec) {
+            //fail(id, ec, "shutdown rawsock"); //ignore error code
+        }
+        while (ioc.poll_one()) {};// drain tasks
         // Close the socket
         pS[id]->s.close(ec);
         if (ec) {
             //fail(id, ec, "close rawsock"); //ignore error code
         }
-        // drain any remaining tasks manually
-        while (ioc.poll_one()) {};
+        while (ioc.poll_one()) {};// drain tasks
     }
     catch (std::exception const& e) {
         zprintf("s_shutdown error: %s", e.what());
