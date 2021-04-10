@@ -221,7 +221,9 @@ void test_dtcsecuritydef(){
 	brokerCommand(SC_GET_SECURITYDEF,&d);
 	printf("\nsSymbol: %s",d.sSymbol);
 	printf("\nsDescription: %s",d.sDescription);
+	printf("\nCurrencyValuePerIncrement: %0.6f",(var)d.CurrencyValuePerIncrement);
 	printf("\nMinPriceIncrement: %0.6f",(var)d.MinPriceIncrement);
+	printf("\n(Multiplier): %0.2f",(var)(d.CurrencyValuePerIncrement/d.MinPriceIncrement));
 }
 void test_snapshot(){
 	printf("\n------------");
