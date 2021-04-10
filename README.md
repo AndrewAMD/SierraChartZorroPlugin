@@ -250,7 +250,8 @@ void main(void){
 ```
 ## Known Issues
 
-* The DTC server might sometimes refuse subscription requests, even when a given symbol can be subscribed to! The plugin attempts to work around this by repeatedly attempting to subscribe.
+* The DTC server might sometimes refuse subscription requests, even when a given symbol can be subscribed to! The plugin attempts to work around this by repeatedly attempting to subscribe until a subscription is confirmed.
+* GET_FUTURES subscribes to all available symbols for the given underlying symbol and returns information on the successfully subscribed symbols.  Take note of how many symbol subscriptions your data services permit.
 * The DTC server might produce an invalid snapshot for a symbol if you're not subscribed to the given symbol!
 
 ## License
