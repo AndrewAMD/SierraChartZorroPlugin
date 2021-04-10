@@ -12,7 +12,7 @@
 #include <map>
 
 #define PLUGIN_VERSION 2
-#define HEARTBEAT_SECONDS 120
+#define HEARTBEAT_SECONDS 60
 
 // default network settings
 #define DEFAULT_HOST "127.0.0.1"
@@ -64,7 +64,7 @@ extern TimeInForceEnum g_TimeInForce;
 extern int g_OrderBlockMode;   // 1: allow, 0: disable blocking on order placement
 extern int g_nLastTradeID;
 extern int g_OrderWait_ms;
-extern bool g_BeQuiet;
+extern bool g_IsScanningContracts;
 s_OrderUpdate* get_order_by_ServerOrderID(const char* ServerOrderID);
 s_OrderUpdate* get_order_by_ClientOrderID(const char* ClientOrderID);
 s_OrderUpdate* get_order_by_TradeID(int nTradeID);
