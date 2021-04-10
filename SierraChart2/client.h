@@ -39,11 +39,11 @@ uint32_t new_symbol_id();
 
 void cl_block(t_fpUnblockContition fpUnblockContition, t_feedid id, int32_t nReqId, void* pAuxiliary);
 void cl_loiter(); //up to 100ms of sleep while still listening for messages on the websocket
+void cl_wait_for(int ms);
 
 
 
-
-#define NETWORK_TIMEOUT_MS 60000
+#define NETWORK_TIMEOUT_MS 600000  // 10 minutes
 void set_timeout(int timeout_ms); // deadline is TIMEOUT_MS milliseconds from now
 bool timed_out();
 //t_ReqId new_request_id();
