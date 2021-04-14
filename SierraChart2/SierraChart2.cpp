@@ -90,6 +90,20 @@ s_Asset* get_asset_by_ZorroSymbol(const char* ZorroSymbol) {
 		}
 		return NULL;
 	}
+	if (strstr(ZorroSymbol, "?##")) {
+		s_Asset* bestmatch = NULL;
+		for (auto& a : g_mAssets) {
+			if (a.second.UnderlyingSymbol == ZorroSymbol) {
+				if (!bestmatch) {
+					bestmatch = &a.second;
+				}
+				else if (a.second.nExpiry < bestmatch->nExpiry) {
+					bestmatch = &a.second;
+				}
+			}
+		}
+		return bestmatch;
+	}
 	else {
 		return get_asset_by_SCSymbol(ZorroSymbol);
 	}
@@ -600,6 +614,7 @@ void get_history(s_HistData* pHD) {
 		if (cl_is_stopped(FEED_HIST)) { return; }
 		if (!is_binary) {
 			zprintf("%s: Server does not support binary encoding!", sN);
+			cl_shutdown(FEED_HIST);
 			return;
 		}
 	}
