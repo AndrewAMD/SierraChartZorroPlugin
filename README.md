@@ -6,7 +6,7 @@ This plugin works both as a broker plugin to the Zorro Trading Automaton and as 
 3) Trade algorithmically
 4) Track your trading account
 
-This plugin was written in Win32 C/C++ using Visual Studio 2017.
+This plugin was written in Win32 C/C++ using Visual Studio 2019.
 
 ## Build Instructions
 
