@@ -27,7 +27,7 @@ To install the plugin, simply place the SierraChart.dll file in the Plugin folde
 
 Sierra Chart is a trading platform with support for [many brokers](https://www.sierrachart.com/index.php?page=doc/SupportedDataAndTradingServices.php).
 
-Sierra Chart has a fully integrated DTC Server.  It has two dedicated ports:
+Sierra Chart has a fully integrated [DTC Server](https://www.sierrachart.com/index.php?page=doc/DTCServer.php).  It has two dedicated ports:
 1) One for all trading, current market data, account data, and position data.
 2) One for all historical market data.
 
